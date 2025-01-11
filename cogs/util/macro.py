@@ -11,6 +11,7 @@ async def send_embed(
     interaction: discord.Interaction,
     embed_type: Literal[EmbedType.NORMAL, EmbedType.ERROR] = EmbedType.NORMAL,
     is_ephemeral: bool = True,
+    is_deferred: bool = True,
     **embed_kwargs,
 ) -> None:
     """Macro to send an interaction response with an embed"""
@@ -22,4 +23,7 @@ async def send_embed(
         case _:
             embed: Embed = Embed()
 
-    await interaction.response.send_message(embed=embed, ephemeral=is_ephemeral)
+    if is_deferred:
+        await interaction.followup.send(embed=embed, ephemeral=is_ephemeral)
+    else:
+        await interaction.response.send_message(embed=embed, ephemeral=is_ephemeral)

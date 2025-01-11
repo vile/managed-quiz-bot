@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from cogs.util.database_interactions import create_tables_if_not_exist
 
+
 class QuizBot(commands.Bot):
     def __init__(self) -> None:
         client_intents = discord.Intents.default()
@@ -26,12 +27,14 @@ class QuizBot(commands.Bot):
     async def setup_hook(self) -> None:
         await self.load_extensions()
 
+
 async def main() -> None:
     load_dotenv()
 
     client: QuizBot = QuizBot()
     async with client:
         await client.start(os.getenv("DISCORD_BOT_TOKEN"))
+
 
 if __name__ == "__main__":
     discord.utils.setup_logging()

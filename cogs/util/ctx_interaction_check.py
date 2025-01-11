@@ -1,8 +1,8 @@
-from discord.ext.commands._types import Check, BotT
-from discord.ext.commands.errors import CheckFailure
-from discord.ext.commands import check, Context
-
 from typing import Any
+
+from discord.ext.commands import Context, check
+from discord.ext.commands._types import BotT, Check
+from discord.ext.commands.errors import CheckFailure
 
 from cogs.util.database_interactions import check_if_manager_exists
 

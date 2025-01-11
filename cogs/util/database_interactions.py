@@ -1,6 +1,6 @@
-import sqlite3 as sql
 import contextlib
 import os
+import sqlite3 as sql
 from typing import Generator, Tuple
 
 

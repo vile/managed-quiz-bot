@@ -29,15 +29,21 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     #     description="Edit settings related to quiz questions. This is where you edit individual quiz questions.",
     # )
 
-    # quiz_group: app_commands.Group = app_commands.Group(
-    #     name="quiz",
-    #     description="Edit settings related to quiz, such as the number of required correct questions.",
-    # )
+    quiz_group: app_commands.Group = app_commands.Group(
+        name="quiz",
+        description="Edit settings related to quiz, such as the number of required correct questions.",
+    )
+
+    quiz_edit_group: app_commands.Group = app_commands.Group(
+        name="quiz-edit",
+        description="Edit settings for individual quizzes.",
+    )
 
     @manager_group.command(name="add", description="Add a new bot manager.")
     async def add_bot_manager(
         self, interaction: discord.Interaction, new_manager: discord.Member
     ) -> None:
+        await interaction.response.defer(ephemeral=True)
         try:
             if db_interactions.check_if_manager_exists(new_manager.id):
                 self.logger.error(
@@ -71,6 +77,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     async def remove_bot_manager(
         self, interaction: discord.Interaction, current_manager: discord.Member
     ) -> None:
+        await interaction.response.defer(ephemeral=True)
         try:
             if db_interactions.remove_current_manager(current_manager.id):
                 self.logger.info(
@@ -99,11 +106,43 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    # @manager_group.command(name="check", description="Check if a user is an existing bot manager.")
-    # async def check_bot_manager() -> None: ...
+    @manager_group.command(
+        name="check", description="Check if a user is an existing bot manager."
+    )
+    async def check_bot_manager(
+        self, interaction: discord.Interaction, user_to_check: discord.Member
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            is_manager: bool = db_interactions.check_if_manager_exists(user_to_check.id)
+            self.logger.info(
+                f"Successfully checked if {user_to_check.id} is a manager: {is_manager}"
+            )
+
+            if is_manager:
+                await send_embed(
+                    interaction, message=f"{user_to_check.mention} is a manager!"
+                )
+            else:
+                await send_embed(
+                    interaction,
+                    color=discord.Colour.orange(),
+                    message=f"{user_to_check.mention} is not a manager.",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception occured when attempting to check manager status."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
 
     @manager_group.command(name="list", description="List all current bot managers.")
     async def list_bot_managers(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
         try:
             managers: list[tuple] = db_interactions.select_all_managers()
             self.logger.info("Successfully got all current bot managers.")
@@ -126,8 +165,21 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    # @question_group.command(name="add", description="")
-    # async def add_quiz_question() -> None: ...
+    # TODO
+    # @question_group.command(
+    #     name="add",
+    #     description="Add a new question to an existing quiz's question bank.",
+    # )
+    # async def add_quiz_question(self, interaction: discord.Interaction) -> None:
+    # What type of quiz (quiz_types.id) should this question be added to
+    # Question text content
+    # Number of answers
+    # Number of correct answers
+    # Answer 1
+    # ...
+    # Answer 4 (correct)
+    # Confirm modal
+    # ...
 
     # @question_group.command(name="remove", description="")
     # async def remove_quiz_question() -> None: ...
@@ -138,10 +190,227 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     # @question_group.command(name="edit", description="")
     # async def () -> None: ...
 
-    # edit how many questions are in a quiz
-    # edit what number of questions need to be correct to pass
+    @quiz_group.command(name="add", description="Add a new quiz type.")
+    async def add_quiz_type(
+        self,
+        interaction: discord.Interaction,
+        quiz_type: str,
+        quiz_length: int,
+        quiz_min_correct: int,
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if db_interactions.check_if_quiz_type_exists(quiz_type):
+                self.logger.error(
+                    "Quiz type already exists, aborting and notifying user."
+                )
 
-    # list role steps
+                await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message="This quiz type already exists.",
+                )
+            else:
+                self.logger.info(
+                    "Quiz type does not exist, attempting to add new quiz type."
+                )
+                quiz_id: int = db_interactions.add_quiz_type(quiz_type)
+                db_interactions.add_quiz_settings(
+                    quiz_id, quiz_length, quiz_min_correct
+                )
+
+                await send_embed(
+                    interaction,
+                    message=f"Successfully added `{quiz_type}` as a new quiz type!",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to add a new quiz type."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    @quiz_group.command(name="remove", description="Remove an existing quiz type.")
+    async def remove_quiz_type(
+        self, interaction: discord.Interaction, quiz_type: str
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if db_interactions.check_if_quiz_type_exists(quiz_type):
+                if db_interactions.remove_quiz_settings(
+                    db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+                ):
+                    db_interactions.remove_quiz_type(quiz_type)
+                    self.logger.info(
+                        f"Successfully removed quiz type {quiz_type} and associated settings."
+                    )
+
+                    await send_embed(
+                        interaction,
+                        message=f"Successfully removed `{quiz_type}` quiz type.",
+                    )
+            else:
+                self.logger.error(
+                    f"Did not remove quiz type {quiz_type} as it was not an existing type."
+                )
+
+                await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message=f"Did not remove quiz type {quiz_type} as it was not an existing type.",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to remove a quiz type."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    @quiz_group.command(name="list", description="List all existing quiz types.")
+    async def list_quiz_types(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            quiz_types: tuple[str] = db_interactions.select_all_quiz_types()
+            self.logger.info("Successfully got all quiz types.")
+
+            embed_message: str = ""
+            if len(quiz_types) == 0:
+                embed_message += "There are no current quiz types."
+            else:
+                for type in quiz_types:
+                    embed_message += f"- [{str(type[0])}] `{str(type[1])}`\n"
+
+            await send_embed(interaction, title="Quiz Types", message=embed_message)
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to list all quiz types."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    @quiz_group.command(
+        name="get", description="Get the settings for an existing quiz type."
+    )
+    async def get_quiz_type(
+        self, interaction: discord.Interaction, quiz_type: str
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if db_interactions.check_if_quiz_type_exists(quiz_type):
+                quiz_settings: tuple = db_interactions.select_quiz_settings(quiz_type)
+                self.logger.info(f"Successfully got quiz settings, {quiz_settings}")
+                await send_embed(
+                    interaction,
+                    title="Quiz Settings",
+                    message=f"[{quiz_settings[0]}] `{quiz_type}`\n- **Quiz Length:** {quiz_settings[1]}\n- **Required Correct Questions:** {quiz_settings[2]}\n- **Passing Grade:** {quiz_settings[2] / quiz_settings[1]:.0%}",
+                )
+            else:
+                await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message="This quiz type does not exist.",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to get a quiz's settings."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    @quiz_edit_group.command(
+        name="quiz-length", description="Edit how many questions appear on a quiz."
+    )
+    async def change_setting_quiz_length(
+        self, interaction: discord.Interaction, quiz_type: str, quiz_length: int
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if db_interactions.check_if_quiz_type_exists(quiz_type):
+                self.logger.info(
+                    f"Quiz type exists, updating quiz setting: length, {quiz_length}"
+                )
+                quiz_id: int = db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+                db_interactions.edit_quiz_settings_length(quiz_length, quiz_id)
+                self.logger.info("Successfully update quiz setting: length")
+
+                await send_embed(
+                    interaction,
+                    message=f"Updated quiz {quiz_type}'s length setting to `{quiz_length}`",
+                )
+            else:
+                await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message="This quiz type does not exist.",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to get a quiz's length."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    @quiz_edit_group.command(
+        name="minimum-score",
+        description="Edit what the minimum amount of correct questions is to pass."
+    )
+    async def change_setting_quiz_min_correct(
+        self, interaction: discord.Interaction, quiz_type: str, quiz_min_correct: int
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if db_interactions.check_if_quiz_type_exists(quiz_type):
+                self.logger.info(
+                    f"Quiz type exists, updating quiz setting: min_correct, {quiz_min_correct}"
+                )
+                quiz_id: int = db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+                db_interactions.edit_quiz_settings_min_correct(
+                    quiz_min_correct, quiz_id
+                )
+                self.logger.info("Successfully update quiz setting: min_correct")
+
+                await send_embed(
+                    interaction,
+                    message=f"Updated quiz {quiz_type}'s minimum correct setting to `{quiz_min_correct}`",
+                )
+            else:
+                await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message="This quiz type does not exist.",
+                )
+        except Exception as error:
+            self.logger.error(
+                "Some other exception happened when trying to get a quiz's minimum passing score."
+            )
+            self.logger.error(error)
+            await send_embed(
+                interaction,
+                embed_type=EmbedType.ERROR,
+                message="An error occured when trying to query the database. Try again.",
+            )
+
+    # TODO: list role steps
 
 
 async def setup(client: commands.Bot) -> None:

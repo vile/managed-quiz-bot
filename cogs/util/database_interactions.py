@@ -1,7 +1,8 @@
 import contextlib
 import os
-import asqlite as sql
 from typing import AsyncGenerator
+
+import asqlite as sql
 
 _connection = None
 

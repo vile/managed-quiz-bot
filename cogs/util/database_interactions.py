@@ -215,7 +215,7 @@ async def remove_quiz_type(quiz_type: str) -> bool:
 
 
 async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
-    """"""
+    """Query database select the quiz settings of a specific quiz."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
@@ -233,7 +233,7 @@ async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
 async def add_quiz_settings(
     quiz_id: int, quiz_length: int, quiz_min_correct: int
 ) -> None:
-    """"""
+    """Insert quiz settings for a new quiz type."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
@@ -245,7 +245,7 @@ async def add_quiz_settings(
 
 
 async def remove_quiz_settings(quiz_id: int) -> bool:
-    """"""
+    """Delete a quiz's settings for a quiz that is being removed."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
@@ -260,7 +260,7 @@ async def remove_quiz_settings(quiz_id: int) -> bool:
 
 
 async def edit_quiz_settings_length(quiz_length: int, quiz_id: int) -> None:
-    """"""
+    """Update a quiz's length setting."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
@@ -273,7 +273,7 @@ async def edit_quiz_settings_length(quiz_length: int, quiz_id: int) -> None:
 
 
 async def edit_quiz_settings_min_correct(quiz_min_correct: int, quiz_id: int) -> None:
-    """"""
+    """Update a quiz's minimum correct setting."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """

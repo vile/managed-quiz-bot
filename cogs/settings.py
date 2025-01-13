@@ -45,7 +45,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_manager_exists(new_manager.id):
+            if await db_interactions.check_if_manager_exists(new_manager.id):
                 self.logger.error(
                     "Manager already exists, aborting and notifying user."
                 )
@@ -58,7 +58,9 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 self.logger.info(
                     f"Manager does not already exist, attempting to insert new manager {new_manager.name} ({new_manager.id})."
                 )
-                db_interactions.add_new_manager(new_manager.id, interaction.user.id)
+                await db_interactions.add_new_manager(
+                    new_manager.id, interaction.user.id
+                )
                 await send_embed(
                     interaction,
                     message=f"Successfully added {new_manager.mention} as a bot manager!",
@@ -79,7 +81,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.remove_current_manager(current_manager.id):
+            if await db_interactions.remove_current_manager(current_manager.id):
                 self.logger.info(
                     f"Successfully removed {current_manager.name} ({current_manager.id}) as a bot manager."
                 )
@@ -114,7 +116,9 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            is_manager: bool = db_interactions.check_if_manager_exists(user_to_check.id)
+            is_manager: bool = await db_interactions.check_if_manager_exists(
+                user_to_check.id
+            )
             self.logger.info(
                 f"Successfully checked if {user_to_check.id} is a manager: {is_manager}"
             )
@@ -144,7 +148,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     async def list_bot_managers(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            managers: list[tuple] = db_interactions.select_all_managers()
+            managers: list[tuple] = await db_interactions.select_all_managers()
             self.logger.info("Successfully got all current bot managers.")
 
             embed_message: str = "**Current bot managers:**\n"
@@ -200,7 +204,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_quiz_type_exists(quiz_type):
+            if await db_interactions.check_if_quiz_type_exists(quiz_type):
                 self.logger.error(
                     "Quiz type already exists, aborting and notifying user."
                 )
@@ -214,8 +218,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 self.logger.info(
                     "Quiz type does not exist, attempting to add new quiz type."
                 )
-                quiz_id: int = db_interactions.add_quiz_type(quiz_type)
-                db_interactions.add_quiz_settings(
+                quiz_id: int = await db_interactions.add_quiz_type(quiz_type)
+                await db_interactions.add_quiz_settings(
                     quiz_id, quiz_length, quiz_min_correct
                 )
 
@@ -240,11 +244,11 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_quiz_type_exists(quiz_type):
-                if db_interactions.remove_quiz_settings(
-                    db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+            if await db_interactions.check_if_quiz_type_exists(quiz_type):
+                if await db_interactions.remove_quiz_settings(
+                    await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
                 ):
-                    db_interactions.remove_quiz_type(quiz_type)
+                    await db_interactions.remove_quiz_type(quiz_type)
                     self.logger.info(
                         f"Successfully removed quiz type {quiz_type} and associated settings."
                     )
@@ -278,7 +282,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     async def list_quiz_types(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            quiz_types: tuple[str] = db_interactions.select_all_quiz_types()
+            quiz_types: tuple[str] = await db_interactions.select_all_quiz_types()
             self.logger.info("Successfully got all quiz types.")
 
             embed_message: str = ""
@@ -308,8 +312,10 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_quiz_type_exists(quiz_type):
-                quiz_settings: tuple = db_interactions.select_quiz_settings(quiz_type)
+            if await db_interactions.check_if_quiz_type_exists(quiz_type):
+                quiz_settings: tuple = await db_interactions.select_quiz_settings(
+                    quiz_type
+                )
                 self.logger.info(f"Successfully got quiz settings, {quiz_settings}")
                 await send_embed(
                     interaction,
@@ -341,12 +347,14 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_quiz_type_exists(quiz_type):
+            if await db_interactions.check_if_quiz_type_exists(quiz_type):
                 self.logger.info(
                     f"Quiz type exists, updating quiz setting: length, {quiz_length}"
                 )
-                quiz_id: int = db_interactions.select_quiz_str_to_quiz_id(quiz_type)
-                db_interactions.edit_quiz_settings_length(quiz_length, quiz_id)
+                quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(
+                    quiz_type
+                )
+                await db_interactions.edit_quiz_settings_length(quiz_length, quiz_id)
                 self.logger.info("Successfully update quiz setting: length")
 
                 await send_embed(
@@ -372,19 +380,21 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
 
     @quiz_edit_group.command(
         name="minimum-score",
-        description="Edit what the minimum amount of correct questions is to pass."
+        description="Edit what the minimum amount of correct questions is to pass.",
     )
     async def change_setting_quiz_min_correct(
         self, interaction: discord.Interaction, quiz_type: str, quiz_min_correct: int
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if db_interactions.check_if_quiz_type_exists(quiz_type):
+            if await db_interactions.check_if_quiz_type_exists(quiz_type):
                 self.logger.info(
                     f"Quiz type exists, updating quiz setting: min_correct, {quiz_min_correct}"
                 )
-                quiz_id: int = db_interactions.select_quiz_str_to_quiz_id(quiz_type)
-                db_interactions.edit_quiz_settings_min_correct(
+                quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(
+                    quiz_type
+                )
+                await db_interactions.edit_quiz_settings_min_correct(
                     quiz_min_correct, quiz_id
                 )
                 self.logger.info("Successfully update quiz setting: min_correct")

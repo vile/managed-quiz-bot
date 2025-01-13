@@ -172,3 +172,5 @@ cython_debug/
 
 # DB
 sql.db
+sql.db-shm
+sql.db-wal

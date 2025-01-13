@@ -123,6 +123,17 @@ files = [
 frozenlist = ">=1.1.0"
 
 [[package]]
+name = "asqlite"
+version = "2.0.0"
+description = "A simple and easy to use async wrapper for sqlite3."
+optional = false
+python-versions = ">=3.8.0"
+files = [
+    {file = "asqlite-2.0.0-py3-none-any.whl", hash = "sha256:271b4206dbab14da93ff191fb03f3166d11d8feec90467653762636810f040b5"},
+    {file = "asqlite-2.0.0.tar.gz", hash = "sha256:97645200037f822c170e7dafa8b8422f85983a36e03060e47dcd932c0e1714a3"},
+]
+
+[[package]]
 name = "attrs"
 version = "24.3.0"
 description = "Classes Without Boilerplate"
@@ -581,4 +592,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.12.8"
-content-hash = "6beaf2e7095e01586ec265c537132b44eb9e5bdaf18402fdc08308ffe007a69d"
+content-hash = "41b598e56dc04d71d220a3cebf18a6905af9059318370e9d884f47fcbdc293f2"

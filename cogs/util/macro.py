@@ -24,6 +24,6 @@ async def send_embed(
             embed: Embed = Embed()
 
     if is_deferred:
-        await interaction.followup.send(embed=embed, ephemeral=is_ephemeral)
+        await interaction.followup.send(embed=embed, ephemeral=is_ephemeral, allowed_mentions=discord.AllowedMentions.none())
     else:
-        await interaction.response.send_message(embed=embed, ephemeral=is_ephemeral)
+        await interaction.response.send_message(embed=embed, ephemeral=is_ephemeral, allowed_mentions=discord.AllowedMentions.none())

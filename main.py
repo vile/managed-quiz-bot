@@ -30,6 +30,7 @@ class QuizBot(commands.Bot):
 
 async def main() -> None:
     load_dotenv()
+    await create_tables_if_not_exist()
 
     client: QuizBot = QuizBot()
     async with client:
@@ -38,7 +39,6 @@ async def main() -> None:
 
 if __name__ == "__main__":
     discord.utils.setup_logging()
-    create_tables_if_not_exist()
 
     try:
         asyncio.run(main())

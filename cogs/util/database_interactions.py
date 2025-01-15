@@ -54,8 +54,9 @@ async def create_tables_if_not_exist() -> None:
             CREATE TABLE IF NOT EXISTS quiz_question_bank (
                 id INTEGER PRIMARY KEY,
                 question_text TEXT NOT NULL,
+                image TEXT,
                 quiz_type INTEGER NOT NULL,
-                created_by INTEGER UNIQUE NOT NULL,
+                created_by INTEGER NOT NULL,
                 created_at INTEGER NOT NULL DEFAULT (unixepoch('now')),
                 FOREIGN KEY(quiz_type) REFERENCES quiz_types(id)
             );
@@ -99,7 +100,8 @@ async def check_if_manager_exists(user_id: int) -> bool:
             (user_id,),
         )
 
-        return await cursor.fetchone()[0] >= 1
+        result = await cursor.fetchone()
+        return result[0] >= 1
 
 
 async def add_new_manager(manager_id: int, caller_id: int) -> None:
@@ -126,7 +128,8 @@ async def remove_current_manager(manager_id: int) -> bool:
             (manager_id,),
         )
 
-        return len(await cursor.fetchall()) >= 1
+        result = await cursor.fetchall()
+        return len(result) >= 1
 
 
 async def select_all_managers() -> list[tuple[int, int, int, int]]:
@@ -139,7 +142,8 @@ async def select_all_managers() -> list[tuple[int, int, int, int]]:
             """
         )
 
-        return await cursor.fetchall()
+        result = await cursor.fetchall()
+        return result
 
 
 async def select_all_quiz_types() -> list[tuple[int, str]]:
@@ -152,7 +156,8 @@ async def select_all_quiz_types() -> list[tuple[int, str]]:
             """
         )
 
-        return await cursor.fetchall()
+        result = await cursor.fetchall()
+        return result
 
 
 async def check_if_quiz_type_exists(quiz_type: str) -> bool:
@@ -167,7 +172,8 @@ async def check_if_quiz_type_exists(quiz_type: str) -> bool:
             (quiz_type,),
         )
 
-        return await cursor.fetchone()[0] >= 1
+        result = await cursor.fetchone()
+        return result[0] >= 1
 
 
 async def select_quiz_str_to_quiz_id(quiz_type: str) -> int:
@@ -182,7 +188,8 @@ async def select_quiz_str_to_quiz_id(quiz_type: str) -> int:
             (quiz_type,),
         )
 
-        return await cursor.fetchone()[0]
+        result = await cursor.fetchone()
+        return result[0]
 
 
 async def add_quiz_type(quiz_type: str) -> int:
@@ -197,7 +204,8 @@ async def add_quiz_type(quiz_type: str) -> int:
             (quiz_type,),
         )
 
-        return await cursor.fetchone()[0]
+        result = await cursor.fetchone()
+        return result[0]
 
 
 async def remove_quiz_type(quiz_type: str) -> bool:
@@ -212,7 +220,8 @@ async def remove_quiz_type(quiz_type: str) -> bool:
             (quiz_type,),
         )
 
-        return len(await cursor.fetchall()) >= 1
+        result = await cursor.fetchall()
+        return len(result) >= 1
 
 
 async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
@@ -228,7 +237,8 @@ async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
             (quiz_type,),
         )
 
-        return await cursor.fetchone()
+        result = await cursor.fetchone()
+        return result
 
 
 async def add_quiz_settings(
@@ -257,7 +267,8 @@ async def remove_quiz_settings(quiz_id: int) -> bool:
             (quiz_id,),
         )
 
-        return len(await cursor.fetchall()) >= 1
+        result = await cursor.fetchall()
+        return len(result) >= 1
 
 
 async def edit_quiz_settings_length(quiz_length: int, quiz_id: int) -> None:
@@ -284,3 +295,115 @@ async def edit_quiz_settings_min_correct(quiz_min_correct: int, quiz_id: int) ->
             """,
             (quiz_min_correct, quiz_id),
         )
+
+
+async def add_quiz_question(
+    question_text: str, image: str, quiz_id: int, created_by: int
+) -> int:
+    """Insert a new quiz question. Retruns the `id` of the new question."""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            INSERT INTO quiz_question_bank (question_text, image, quiz_type, created_by)
+            VALUES (?, ?, ?, ?)
+            RETURNING id;
+            """,
+            (question_text, image, quiz_id, created_by),
+        )
+
+        result = await cursor.fetchone()
+        return result[0]
+
+
+async def add_quiz_question_choice(
+    question_id: int, choice_text: str, is_correct: bool
+) -> None:
+    """Insert a new quiz question choice."""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            INSERT INTO quiz_choice_bank (question_id, choice_text, is_correct)
+            VALUES (?, ?, ?);
+            """,
+            (question_id, choice_text, is_correct),
+        )
+
+
+async def remove_quiz_question(question_id: int) -> bool:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            DELETE FROM quiz_question_bank
+            WHERE id = ?
+            RETURNING *;
+            """,
+            (question_id,),
+        )
+
+        result = await cursor.fetchall()
+        return len(result) >= 1
+
+
+async def remove_quiz_question_choice(question_id: int) -> bool:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            DELETE FROM quiz_choice_bank
+            WHERE question_id = ?
+            RETURNING *;
+            """,
+            (question_id,),
+        )
+
+        result = await cursor.fetchall()
+        return len(result) >= 1
+
+
+async def list_quiz_questions(quiz_id: int) -> tuple[list]:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            SELECT *
+            FROM quiz_question_bank
+            WHERE quiz_type = ?;
+            """,
+            (quiz_id,),
+        )
+
+        result = await cursor.fetchall()
+        return result
+
+
+async def list_quiz_question_choices(question_id: int) -> tuple[list]:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            SELECT *
+            FROM quiz_choice_bank
+            WHERE question_id = ?;
+            """,
+            (question_id,),
+        )
+
+        result = await cursor.fetchall()
+        return result
+
+
+async def check_quiz_question_exists(question_id: int) -> bool:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            SELECT COUNT(id)
+            FROM quiz_question_bank
+            WHERE id = ?;
+            """,
+            (question_id,),
+        )
+
+        result = await cursor.fetchone()
+        return result[0] >= 1

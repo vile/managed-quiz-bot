@@ -24,11 +24,6 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         description="Edit settings related to quiz bot managers.",
     )
 
-    # question_group: app_commands.Group = app_commands.Group(
-    #     name="question",
-    #     description="Edit settings related to quiz questions. This is where you edit individual quiz questions.",
-    # )
-
     quiz_group: app_commands.Group = app_commands.Group(
         name="quiz",
         description="Edit settings related to quiz, such as the number of required correct questions.",
@@ -168,31 +163,6 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
-
-    # TODO
-    # @question_group.command(
-    #     name="add",
-    #     description="Add a new question to an existing quiz's question bank.",
-    # )
-    # async def add_quiz_question(self, interaction: discord.Interaction) -> None:
-    # What type of quiz (quiz_types.id) should this question be added to
-    # Question text content
-    # Number of answers
-    # Number of correct answers
-    # Answer 1
-    # ...
-    # Answer 4 (correct)
-    # Confirm modal
-    # ...
-
-    # @question_group.command(name="remove", description="")
-    # async def remove_quiz_question() -> None: ...
-
-    # @question_group.command(name="list", description="")
-    # async def list_quiz_question() -> None: ...
-
-    # @question_group.command(name="edit", description="")
-    # async def () -> None: ...
 
     @quiz_group.command(name="add", description="Add a new quiz type.")
     async def add_quiz_type(
@@ -419,8 +389,6 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
-
-    # TODO: list role steps
 
 
 async def setup(client: commands.Bot) -> None:

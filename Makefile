@@ -1,4 +1,4 @@
-.PHONY: all deps start
+.PHONY: all deps start rmdb
 
 all: deps start
 
@@ -7,3 +7,5 @@ deps:
 	poetry install --no-root
 
 start :; poetry run python3 main.py
+
+rmdb :; rm -rf sql.db sql.db-shm sql.db-wal

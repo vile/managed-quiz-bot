@@ -51,6 +51,8 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
         correct_answers: app_commands.Transform[
             PreparedAnswers, PreparedAnswersTransformer
         ],
+        correct_answer_text: str,
+        incorrect_answer_text: str,
         answer_one: str,
         answer_two: str,
         answer_three: Optional[str],
@@ -109,7 +111,12 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
 
             quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
             question_id = await db_interactions.add_quiz_question(
-                question_text, image, quiz_id, interaction.user.id
+                question_text,
+                correct_answer_text,
+                incorrect_answer_text,
+                image,
+                quiz_id,
+                interaction.user.id,
             )
             for idx, answer in enumerate(answer_list):
                 if answer is not None:
@@ -212,6 +219,8 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 (
                     question_id,
                     question_text,
+                    correct_answer_text,
+                    incorrect_answer_text,
                     question_image,
                     _,
                     created_by,
@@ -226,7 +235,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     answer_text += f"- {'**' if is_correct else ''}{chr(ord('@') + (idx + 1))}: {choice_text}{'**' if is_correct else ''}\n"
 
                 section_text: str = (
-                    f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None\n' if question_image is None else f'[image]({question_image})\n'}**Answer Choices:**\n{answer_text}\n"
+                    f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None' if question_image is None else f'[image]({question_image})'}\n- Correct Answer Text: {correct_answer_text}\n- Incorrect Answer Text: {incorrect_answer_text}\n**Answer Choices:**\n{answer_text}\n"
                 )
 
                 if (

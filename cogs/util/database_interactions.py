@@ -43,7 +43,7 @@ async def create_tables_if_not_exist() -> None:
         await cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS quiz_types (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class_type TEXT UNIQUE NOT NULL
             );
             """
@@ -52,8 +52,10 @@ async def create_tables_if_not_exist() -> None:
         await cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS quiz_question_bank (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 question_text TEXT NOT NULL,
+                correct_answer_text TEXT NOT NULL,
+                incorrect_answer_text TEXT NOT NULL,
                 image TEXT,
                 quiz_type INTEGER NOT NULL,
                 created_by INTEGER NOT NULL,
@@ -66,7 +68,7 @@ async def create_tables_if_not_exist() -> None:
         await cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS quiz_choice_bank (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 question_id INTEGER NOT NULL,
                 choice_text NOT NULL,
                 is_correct BOOLEAN NOT NULL,
@@ -82,7 +84,35 @@ async def create_tables_if_not_exist() -> None:
                 quiz_type INTEGER UNIQUE NOT NULL,
                 length INTEGER NOT NULL,
                 min_correct INTEGER NOT NULL,
+                required_role INTEGER NOT NULL,
+                passing_role INTEGER NOT NULL,
+                passing_role_two INTEGER NOT NULL,
+                non_passing_role INTEGER NOT NULL,
                 FOREIGN KEY (quiz_type) REFERENCES quiz_types(id)
+            );
+            """
+        )
+
+        await cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS quiz_stats (
+                id INTEGER PRIMARY KEY,
+                discord_id INTEGER NOT NULL,
+                quiz_type INTEGER NOT NULL,
+                passed BOOLEAN NOT NULL,
+                timestamp INTEGER NOT NULL DEFAULT (unixepoch('now'))
+            );
+            """
+        )
+
+        await cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS question_stats (
+                id INTEGER PRIMARY KEY,
+                discord_id INTEGER NOT NULL,
+                question_id INTEGER NOT NULL,
+                correct BOOLEAN NOT NULL,
+                timestamp INTEGER NOT NULL DEFAULT (unixepoch('now'))
             );
             """
         )
@@ -224,12 +254,12 @@ async def remove_quiz_type(quiz_type: str) -> bool:
         return len(result) >= 1
 
 
-async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
+async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int, int]:
     """Query database select the quiz settings of a specific quiz."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            SELECT qs.id, qs.length, qs.min_correct
+            SELECT qs.id, qs.length, qs.min_correct, qs.required_role, qs.passing_role, qs.passing_role_two, qs.non_passing_role
             FROM quiz_settings AS qs
             LEFT JOIN quiz_types AS qt ON qs.quiz_type = qt.id
             WHERE qt.class_type = ?;
@@ -242,16 +272,30 @@ async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int]:
 
 
 async def add_quiz_settings(
-    quiz_id: int, quiz_length: int, quiz_min_correct: int
+    quiz_id: int,
+    quiz_length: int,
+    quiz_min_correct: int,
+    required_role: int,
+    passing_role: int,
+    passing_role_two: int,
+    non_passing_role: int,
 ) -> None:
     """Insert quiz settings for a new quiz type."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            INSERT INTO quiz_settings (quiz_type, length, min_correct)
-            VALUES (?, ?, ?);
+            INSERT INTO quiz_settings (quiz_type, length, min_correct, required_role, passing_role, passing_role_two, non_passing_role)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
             """,
-            (quiz_id, quiz_length, quiz_min_correct),
+            (
+                quiz_id,
+                quiz_length,
+                quiz_min_correct,
+                required_role,
+                passing_role,
+                passing_role_two,
+                non_passing_role,
+            ),
         )
 
 
@@ -298,17 +342,29 @@ async def edit_quiz_settings_min_correct(quiz_min_correct: int, quiz_id: int) ->
 
 
 async def add_quiz_question(
-    question_text: str, image: str, quiz_id: int, created_by: int
+    question_text: str,
+    correct_answer_text: str,
+    incorrect_answer_text: str,
+    image: str,
+    quiz_id: int,
+    created_by: int,
 ) -> int:
     """Insert a new quiz question. Retruns the `id` of the new question."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            INSERT INTO quiz_question_bank (question_text, image, quiz_type, created_by)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO quiz_question_bank (question_text, correct_answer_text, incorrect_answer_text, image, quiz_type, created_by)
+            VALUES (?, ?, ?, ?, ?, ?)
             RETURNING id;
             """,
-            (question_text, image, quiz_id, created_by),
+            (
+                question_text,
+                correct_answer_text,
+                incorrect_answer_text,
+                image,
+                quiz_id,
+                created_by,
+            ),
         )
 
         result = await cursor.fetchone()
@@ -407,3 +463,29 @@ async def check_quiz_question_exists(question_id: int) -> bool:
 
         result = await cursor.fetchone()
         return result[0] >= 1
+
+
+async def insert_quiz_stat(discord_id: int, quiz_type: int, passed: bool) -> None:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            INSERT INTO quiz_stats (discord_id, quiz_type, passed)
+            VALUES (?, ?, ?);
+            """,
+            (discord_id, quiz_type, passed),
+        )
+
+
+async def insert_question_stat(
+    discord_id: int, question_id: int, correct: bool
+) -> None:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            INSERT INTO question_stats (discord_id, question_id, correct)
+            VALUES (?, ?, ?);
+            """,
+            (discord_id, question_id, correct),
+        )

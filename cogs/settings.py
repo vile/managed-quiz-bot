@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import discord
 from discord import app_commands
@@ -171,6 +172,10 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         quiz_type: str,
         quiz_length: int,
         quiz_min_correct: int,
+        required_role: discord.Role,
+        passing_role: discord.Role,
+        passing_role_two: Optional[discord.Role],
+        non_passing_role: discord.Role,
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
@@ -190,12 +195,18 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 )
                 quiz_id: int = await db_interactions.add_quiz_type(quiz_type)
                 await db_interactions.add_quiz_settings(
-                    quiz_id, quiz_length, quiz_min_correct
+                    quiz_id,
+                    quiz_length,
+                    quiz_min_correct,
+                    required_role.id,
+                    passing_role.id,
+                    passing_role_two.id,
+                    non_passing_role.id,
                 )
 
                 await send_embed(
                     interaction,
-                    message=f"Successfully added `{quiz_type}` as a new quiz type!",
+                    message=f"Successfully added `{quiz_type}` as a new quiz type for {required_role.mention}!",
                 )
         except Exception as error:
             self.logger.error(
@@ -290,7 +301,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 await send_embed(
                     interaction,
                     title="Quiz Settings",
-                    message=f"[{quiz_settings[0]}] `{quiz_type}`\n- **Quiz Length:** {quiz_settings[1]}\n- **Required Correct Questions:** {quiz_settings[2]}\n- **Passing Grade:** {quiz_settings[2] / quiz_settings[1]:.0%}",
+                    message=f"[{quiz_settings[0]}] `{quiz_type}`\n- **Quiz Length:** {quiz_settings[1]}\n- **Required Correct Questions:** {quiz_settings[2]}\n- **Passing Grade:** {quiz_settings[2] / quiz_settings[1]:.0%}\n- **Required Role:** <@&{quiz_settings[3]}>",
                 )
             else:
                 await send_embed(

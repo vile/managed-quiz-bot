@@ -259,7 +259,7 @@ async def select_quiz_settings(quiz_type: str) -> tuple[int, int, int, int]:
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            SELECT qs.id, qs.length, qs.min_correct, qs.required_role, qs.passing_role, qs.passing_role_two, qs.non_passing_role
+            SELECT qt.id, qs.length, qs.min_correct, qs.required_role, qs.passing_role, qs.passing_role_two, qs.non_passing_role
             FROM quiz_settings AS qs
             LEFT JOIN quiz_types AS qt ON qs.quiz_type = qt.id
             WHERE qt.class_type = ?;
@@ -489,3 +489,118 @@ async def insert_question_stat(
             """,
             (discord_id, question_id, correct),
         )
+
+
+async def select_quiz_stats_for_user(discord_id: int, quiz_id: int) -> tuple[bool, int]:
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            SELECT qs.passed, qs.timestamp
+            FROM quiz_stats AS qs
+            WHERE discord_id = ? AND quiz_type = ?
+            ORDER BY timestamp DESC
+            LIMIT 1;
+            """,
+            (discord_id, quiz_id),
+        )
+
+        result = await cursor.fetchone()
+        return result
+
+
+async def select_quiz_stats_aggregate(quiz_id: int) -> (
+    list[tuple[int, float, int, float, int, int, int]]
+):
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            WITH 
+                total_stats AS (
+                    SELECT 
+                        COUNT(*) AS total_rows,
+                        CAST(SUM(CASE WHEN passed THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS total_pass_ratio
+                    FROM 
+                        quiz_stats
+                ),
+                per_quiz_type_ratio AS (
+                    SELECT 
+                        quiz_type,
+                        COUNT(*) AS total_attempts, -- Total attempts for the specific quiz type
+                        CAST(SUM(CASE WHEN passed THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS pass_ratio,
+                        MIN(timestamp) AS oldest_timestamp, -- Oldest timestamp for specific quiz type
+                        MAX(timestamp) AS newest_timestamp -- Newest timestamp for specific quiz type
+                    FROM 
+                        quiz_stats
+                    GROUP BY 
+                        quiz_type
+                )
+            SELECT 
+                ts.total_rows,
+                ts.total_pass_ratio,
+                pq.quiz_type,
+                pq.pass_ratio,
+                pq.total_attempts, -- Include total attempts in the result
+                pq.oldest_timestamp, -- Oldest timestamp for specific quiz type
+                pq.newest_timestamp -- Newest timestamp for specific quiz type
+            FROM 
+                total_stats ts
+            LEFT JOIN 
+                per_quiz_type_ratio pq ON 1 = 1
+            WHERE
+                pq.quiz_type = ? -- Filter for the specific quiz type
+            ORDER BY 
+                pq.quiz_type;        
+            """,
+            (quiz_id,)
+        )
+
+        result = await cursor.fetchone()
+        return result
+
+
+async def select_question_stats_aggregate() -> (
+    list[tuple[int, float, int, float, int, int]]
+):
+    """"""
+    async with get_db_context() as cursor:
+        await cursor.execute(
+            """
+            WITH 
+                total_stats AS (
+                    SELECT 
+                        COUNT(*) AS total_rows,
+                        CAST(SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS total_correct_ratio,
+                        MIN(timestamp) AS oldest_timestamp,
+                        MAX(timestamp) AS newest_timestamp
+                    FROM 
+                        question_stats
+                ),
+                per_question_ratio AS (
+                    SELECT 
+                        question_id,
+                        CAST(SUM(CASE WHEN correct THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS correct_ratio
+                    FROM 
+                        question_stats
+                    GROUP BY 
+                        question_id
+                )
+            SELECT 
+                ts.total_rows,
+                ts.total_correct_ratio,
+                pq.question_id,
+                pq.correct_ratio,
+                ts.oldest_timestamp,
+                ts.newest_timestamp
+            FROM 
+                total_stats ts
+            LEFT JOIN 
+                per_question_ratio pq ON 1 = 1
+            ORDER BY 
+                pq.question_id;
+            """,
+        )
+
+        result = await cursor.fetchall()
+        return result

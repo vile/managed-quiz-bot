@@ -212,6 +212,11 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
             quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
             questions = await db_interactions.list_quiz_questions(quiz_id)
 
+            if len(questions) == 0:
+                return await send_embed(
+                    interaction, message="There are no questions for this quiz."
+                )
+
             embeds: list[discord.Embed] = []
             description_text: str = ""
 

@@ -200,7 +200,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                     quiz_min_correct,
                     required_role.id,
                     passing_role.id,
-                    passing_role_two.id,
+                    passing_role_two.id if passing_role_two is not None else None,
                     non_passing_role.id,
                 )
 
@@ -294,11 +294,12 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         await interaction.response.defer(ephemeral=True)
         try:
             if await db_interactions.check_if_quiz_type_exists(quiz_type):
+                # TODO: unpack list
                 quiz_settings: tuple = await db_interactions.select_quiz_settings(
                     quiz_type
                 )
                 self.logger.info(f"Successfully got quiz settings, {quiz_settings}")
-                await send_embed(
+                await send_embed(  # TODO: include passing and nonpassing roles
                     interaction,
                     title="Quiz Settings",
                     message=f"[{quiz_settings[0]}] `{quiz_type}`\n- **Quiz Length:** {quiz_settings[1]}\n- **Required Correct Questions:** {quiz_settings[2]}\n- **Passing Grade:** {quiz_settings[2] / quiz_settings[1]:.0%}\n- **Required Role:** <@&{quiz_settings[3]}>",

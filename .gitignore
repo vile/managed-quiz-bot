@@ -174,3 +174,4 @@ cython_debug/
 sql.db
 sql.db-shm
 sql.db-wal
+SQLite.sql

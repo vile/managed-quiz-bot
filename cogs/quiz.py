@@ -53,6 +53,7 @@ class QuizView(discord.ui.View):
         self.add_item(QuizSubmitButton())
 
     async def on_timeout(self) -> None:
+        # TODO: handle quiz timeout
         await self.disable_children()
 
     async def disable_children(self) -> None:
@@ -99,13 +100,15 @@ class QuizSubmitButton(discord.ui.Button):
 
         if await self.are_answers_correct():
             embed: discord.Embed = discord.Embed(
-                description=self.view.correct_answer_text
+                description=self.view.correct_answer_text,
+                color=discord.Colour.green(),
             )
             await interaction.followup.send(embed=embed)
             self.view.answered_correctly = True
         else:
             embed: discord.Embed = discord.Embed(
-                description=self.view.incorrect_answer_text
+                description=self.view.incorrect_answer_text,
+                color=discord.Colour.orange(),
             )
             await interaction.followup.send(embed=embed)
 
@@ -206,7 +209,9 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             await interaction.user.send(f"Preparing your `{quiz}` quiz now!")
 
             # get set of questions (questions are randomized during view creation)
+            print(quiz_id)
             question_bank = await db_interactions.list_quiz_questions(quiz_id)
+            print(f"{question_bank=}")
             parsed_questions: list[QuizQuestion] = []
             for question in question_bank:
                 (
@@ -215,9 +220,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     correct_answer_text,
                     incorrect_answer_text,
                     image,
-                    _,
-                    _,
-                    _,
+                    *_,
                 ) = question
 
                 choice_bank = await db_interactions.list_quiz_question_choices(idx)
@@ -239,6 +242,20 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
 
                 if len(parsed_questions) >= quiz_length:
                     break
+
+            if (final_quiz_length := len(parsed_questions)) < quiz_length:
+                self.active_quiz_users.remove(interaction.user.id)
+                self.logger.error(
+                    f"Not enough questions in pool to fill quiz. {final_quiz_length=} {quiz_length=}"
+                )
+                await interaction.user.send(
+                    f"There was an error starting your quiz, please see {interaction.channel.mention} for more info."
+                )
+                return await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message=f"Sorry, it looks like there aren't enough questions for this quiz. Contact a mod to solve this issue.",
+                )
 
             self.logger.debug(parsed_questions)
             await send_embed(
@@ -288,9 +305,14 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     color=discord.Colour.green(),
                 )
 
-                await interaction.user.add_roles(
+                roles: list[discord.Object] = [
                     discord.Object(id=quiz_passing_role),
-                    discord.Object(id=quiz_passing_role_two),
+                ]
+                if quiz_passing_role_two is not None:
+                    roles.append(discord.Object(id=quiz_passing_role_two))
+
+                await interaction.user.add_roles(
+                    *roles,
                     reason=f"User passed {quiz} quiz",
                 )
                 await db_interactions.insert_quiz_stat(

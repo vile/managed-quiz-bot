@@ -34,7 +34,11 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
         await interaction.response.defer(ephemeral=True)
         try:
             if not await db_interactions.check_if_quiz_type_exists(quiz):
-                return await send_embed(interaction, embed_type=EmbedType.ERROR, message=f"Quiz type `{quiz}` does not exist.")
+                return await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message=f"Quiz type `{quiz}` does not exist.",
+                )
 
             quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz)
             user_stats = await db_interactions.select_quiz_stats_for_user(
@@ -65,11 +69,23 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
         await interaction.response.defer(ephemeral=True)
         try:
             if not await db_interactions.check_if_quiz_type_exists(quiz):
-                return await send_embed(interaction, embed_type=EmbedType.ERROR, message=f"Quiz type `{quiz}` does not exist.")
-            
+                return await send_embed(
+                    interaction,
+                    embed_type=EmbedType.ERROR,
+                    message=f"Quiz type `{quiz}` does not exist.",
+                )
+
             quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz)
             agg_stats = await db_interactions.select_quiz_stats_aggregate(quiz_id)
-            total_quiz_attempts, total_pass_rate, _, quiz_pass_rate, quiz_attempts, oldest_attempt, newest_attempt = agg_stats
+            (
+                total_quiz_attempts,
+                total_pass_rate,
+                _,
+                quiz_pass_rate,
+                quiz_attempts,
+                oldest_attempt,
+                newest_attempt,
+            ) = agg_stats
 
             await send_embed(
                 interaction,
@@ -86,25 +102,6 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
-
-    # @get_group.command(
-    #     name="aggregate-question",
-    #     description="Get an aggregate data overview of a specific quiz question.",
-    # )
-    # async def _(self, interaction: discord.Interaction, question_id: int) -> None:
-    #     await interaction.response.defer(ephemeral=True)
-    #     try:
-    #         ...
-    #     except Exception as error:
-    #         self.logger.error(
-    #             "Some other exception happened when trying to add a new manager."
-    #         )
-    #         self.logger.error(error)
-    #         await send_embed(
-    #             interaction,
-    #             embed_type=EmbedType.ERROR,
-    #             message="An error occured when trying to query the database. Try again.",
-    #         )
 
 
 async def setup(client: commands.Bot) -> None:

@@ -68,7 +68,7 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
                     message=f"Quiz type `{quiz}` does not exist.",
                 )
 
-            quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz)
+            quiz_id = await db_interactions.select_quiz_slug_to_quiz_id(quiz)
             agg_stats = await db_interactions.select_quiz_stats_aggregate(quiz_id)
             (
                 total_quiz_attempts,

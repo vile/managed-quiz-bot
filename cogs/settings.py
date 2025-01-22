@@ -227,7 +227,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         try:
             if await db_interactions.check_if_quiz_type_exists(quiz_type):
                 if await db_interactions.remove_quiz_settings(
-                    await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+                    await db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
                 ):
                     await db_interactions.remove_quiz_type(quiz_type)
                     self.logger.info(
@@ -333,7 +333,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 self.logger.info(
                     f"Quiz type exists, updating quiz setting: length, {quiz_length}"
                 )
-                quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(
+                quiz_id: int = await db_interactions.select_quiz_slug_to_quiz_id(
                     quiz_type
                 )
                 await db_interactions.edit_quiz_settings_length(quiz_length, quiz_id)
@@ -373,7 +373,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 self.logger.info(
                     f"Quiz type exists, updating quiz setting: min_correct, {quiz_min_correct}"
                 )
-                quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(
+                quiz_id: int = await db_interactions.select_quiz_slug_to_quiz_id(
                     quiz_type
                 )
                 await db_interactions.edit_quiz_settings_min_correct(

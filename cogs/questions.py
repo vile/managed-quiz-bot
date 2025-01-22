@@ -109,7 +109,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     message="The quiz type you supplied doesn't exist. Make sure inputting the exact quiz type and that it exists.",
                 )
 
-            quiz_id: int = await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+            quiz_id: int = await db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
             question_id = await db_interactions.add_quiz_question(
                 question_text,
                 correct_answer_text,
@@ -209,7 +209,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 )
 
             # question id, question text, question image, quiz id, created by, created at
-            quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz_type)
+            quiz_id = await db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
             questions = await db_interactions.list_quiz_questions(quiz_id)
 
             if len(questions) == 0:

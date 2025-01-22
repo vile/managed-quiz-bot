@@ -29,27 +29,21 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
         description="Get passing and timestamp data about a user's quiz.",
     )
     async def get_user_quiz(
-        self, interaction: discord.Interaction, user: discord.Member, quiz: str
+        self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            if not await db_interactions.check_if_quiz_type_exists(quiz):
-                return await send_embed(
-                    interaction,
-                    embed_type=EmbedType.ERROR,
-                    message=f"Quiz type `{quiz}` does not exist.",
-                )
+            user_stats = await db_interactions.select_quiz_stats_for_user(user.id)
 
-            quiz_id = await db_interactions.select_quiz_str_to_quiz_id(quiz)
-            user_stats = await db_interactions.select_quiz_stats_for_user(
-                user.id, quiz_id
-            )
-            quiz_passed, quiz_timestamp = user_stats
+            message: str = ""
+            for stat in user_stats:
+                quiz_passed, quiz_timestamp, quiz_slug = stat
+                message += f"{user.mention} {'did' if quiz_passed else 'did not'} pass `{quiz_slug}` quiz at <t:{quiz_timestamp}:f>\n"
 
             await send_embed(
                 interaction,
-                title=f"Stats for {user.display_name}'s {quiz} quiz",
-                message=f"{user.mention} {'did' if quiz_passed else 'did not'} pass at <t:{quiz_timestamp}:f>",
+                title=f"Quiz stats for {user.display_name}",
+                message=message,
             )
         except Exception as error:
             self.logger.error(

@@ -491,21 +491,30 @@ async def insert_question_stat(
         )
 
 
-async def select_quiz_stats_for_user(discord_id: int, quiz_id: int) -> tuple[bool, int]:
+async def select_quiz_stats_for_user(discord_id: int) -> list[tuple[bool, int, str]]:
     """"""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            SELECT qs.passed, qs.timestamp
-            FROM quiz_stats AS qs
-            WHERE discord_id = ? AND quiz_type = ?
-            ORDER BY timestamp DESC
-            LIMIT 1;
+            SELECT 
+                qs.passed, 
+                qs.timestamp, 
+                qt.class_type
+            FROM 
+                quiz_stats AS qs
+            JOIN 
+                quiz_types AS qt
+            ON 
+                qs.quiz_type = qt.id
+            WHERE 
+                qs.discord_id = ?
+            ORDER BY 
+                qs.timestamp DESC;
             """,
-            (discord_id, quiz_id),
+            (discord_id),
         )
 
-        result = await cursor.fetchone()
+        result = await cursor.fetchall()
         return result
 
 

@@ -45,6 +45,10 @@ class QuizView(discord.ui.View):
         self.user_answers = []
         self.answered_correctly = False
         self.user = user
+        self.single_answer = False
+
+        if [choice.is_correct for choice in choices].count(True) == 1:
+            self.single_answer = True
 
         for idx, choice in enumerate(choices):
             choice_letter: str = chr(ord("@") + (idx + 1))
@@ -72,12 +76,21 @@ class QuizChoiceButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer()
 
-        if self.label in self.view.user_answers:
-            self.view.user_answers.remove(self.label)
-            self.style = discord.ButtonStyle.gray
-        else:
-            self.view.user_answers.append(self.label)
+        if self.view.single_answer:
+            self.view.user_answers = [self.label]
+
+            for child in self.view.children:
+                if child.label != "Submit":
+                    child.style = discord.ButtonStyle.gray
+
             self.style = discord.ButtonStyle.green
+        else:
+            if self.label in self.view.user_answers:
+                self.view.user_answers.remove(self.label)
+                self.style = discord.ButtonStyle.gray
+            else:
+                self.view.user_answers.append(self.label)
+                self.style = discord.ButtonStyle.green
 
         await interaction.edit_original_response(view=self.view)
 
@@ -209,9 +222,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             await interaction.user.send(f"Preparing your `{quiz}` quiz now!")
 
             # get set of questions (questions are randomized during view creation)
-            print(quiz_id)
             question_bank = await db_interactions.list_quiz_questions(quiz_id)
-            print(f"{question_bank=}")
             parsed_questions: list[QuizQuestion] = []
             for question in question_bank:
                 (
@@ -269,7 +280,11 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 sample(parsed_questions, len(parsed_questions))
             ):
                 answer_text: str = ""
+                num_correct_answers: int = 0
                 for idy, choice in enumerate(question.choices):
+                    if choice.is_correct:
+                        num_correct_answers += 1
+
                     answer_text += (
                         f"- {chr(ord('@') + (idy + 1))}) {choice.choice_text}\n"
                     )
@@ -280,7 +295,8 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     color=discord.Colour.blue(),
                 )
 
-                embed.set_footer(text="There many be multiple correct answers.")
+                if num_correct_answers > 1:
+                    embed.set_footer(text="There many be multiple correct answers.")
 
                 if question.image:
                     embed.set_image(url=question.image)

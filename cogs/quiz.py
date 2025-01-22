@@ -197,7 +197,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             required_role: discord.Role = discord.utils.get(
                 interaction.guild.roles, id=quiz_required_role
             )
-            if not required_role in interaction.user.roles:
+            if required_role not in interaction.user.roles:
                 self.logger.error(
                     f"User does not have requried role to start quiz {required_role=}"
                 )
@@ -265,7 +265,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 return await send_embed(
                     interaction,
                     embed_type=EmbedType.ERROR,
-                    message=f"Sorry, it looks like there aren't enough questions for this quiz. Contact a mod to solve this issue.",
+                    message="Sorry, it looks like there aren't enough questions for this quiz. Contact a mod to solve this issue.",
                 )
 
             self.logger.debug(parsed_questions)
@@ -353,7 +353,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 discord.Object(id=quiz_required_role),
                 reason=f"User has attempted {quiz} quiz",
             )
-            await interaction.user.send(content=f"Quiz complete!", embed=embed)
+            await interaction.user.send(content="Quiz complete!", embed=embed)
             self.active_quiz_users.remove(interaction.user.id)
         except discord.Forbidden:
             await send_embed(

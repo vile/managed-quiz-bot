@@ -68,7 +68,7 @@ async def create_tables_if_not_exist() -> None:
         await cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS quiz_choice_bank (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 question_id INTEGER NOT NULL,
                 choice_text NOT NULL,
                 is_correct BOOLEAN NOT NULL,
@@ -496,19 +496,19 @@ async def select_quiz_stats_for_user(discord_id: int) -> list[tuple[bool, int, s
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            SELECT 
-                qs.passed, 
-                qs.timestamp, 
+            SELECT
+                qs.passed,
+                qs.timestamp,
                 qt.class_type
-            FROM 
+            FROM
                 quiz_stats AS qs
-            JOIN 
+            JOIN
                 quiz_types AS qt
-            ON 
+            ON
                 qs.quiz_type = qt.id
-            WHERE 
+            WHERE
                 qs.discord_id = ?
-            ORDER BY 
+            ORDER BY
                 qs.timestamp DESC;
             """,
             (discord_id),
@@ -525,27 +525,27 @@ async def select_quiz_stats_aggregate(
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            WITH 
+            WITH
                 total_stats AS (
-                    SELECT 
+                    SELECT
                         COUNT(*) AS total_rows,
                         CAST(SUM(CASE WHEN passed THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS total_pass_ratio
-                    FROM 
+                    FROM
                         quiz_stats
                 ),
                 per_quiz_type_ratio AS (
-                    SELECT 
+                    SELECT
                         quiz_type,
                         COUNT(*) AS total_attempts, -- Total attempts for the specific quiz type
                         CAST(SUM(CASE WHEN passed THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS pass_ratio,
                         MIN(timestamp) AS oldest_timestamp, -- Oldest timestamp for specific quiz type
                         MAX(timestamp) AS newest_timestamp -- Newest timestamp for specific quiz type
-                    FROM 
+                    FROM
                         quiz_stats
-                    GROUP BY 
+                    GROUP BY
                         quiz_type
                 )
-            SELECT 
+            SELECT
                 ts.total_rows,
                 ts.total_pass_ratio,
                 pq.quiz_type,
@@ -553,14 +553,14 @@ async def select_quiz_stats_aggregate(
                 pq.total_attempts, -- Include total attempts in the result
                 pq.oldest_timestamp, -- Oldest timestamp for specific quiz type
                 pq.newest_timestamp -- Newest timestamp for specific quiz type
-            FROM 
+            FROM
                 total_stats ts
-            LEFT JOIN 
+            LEFT JOIN
                 per_quiz_type_ratio pq ON 1 = 1
             WHERE
                 pq.quiz_type = ? -- Filter for the specific quiz type
-            ORDER BY 
-                pq.quiz_type;        
+            ORDER BY
+                pq.quiz_type;
             """,
             (quiz_id,),
         )

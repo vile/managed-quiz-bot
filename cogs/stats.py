@@ -38,9 +38,12 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
             )
 
             message: str = ""
-            for stat in user_stats:
-                quiz_passed, quiz_timestamp, quiz_slug = stat
-                message += f"{user.mention} {'did' if quiz_passed else 'did not'} pass `{quiz_slug}` quiz at <t:{quiz_timestamp}:f>\n"
+            if len(user_stats) > 0:
+                for stat in user_stats:
+                    quiz_passed, quiz_timestamp, quiz_slug = stat
+                    message += f"{user.mention} {'did' if quiz_passed else 'did not'} pass `{quiz_slug}` quiz at <t:{quiz_timestamp}:f>\n"
+            else:
+                message = "This user has not taken any quizzes yet."
 
             await send_embed(
                 interaction,
@@ -75,6 +78,14 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
             agg_stats: DBQuizAggregateStats = (
                 await db_interactions.select_quiz_stats_aggregate(quiz_id)
             )
+
+            if agg_stats is None:
+                return await send_embed(
+                    interaction,
+                    title=f"Aggregate stats for {quiz} quiz",
+                    message="There are no stats to report for this quiz.",
+                )
+
             (
                 total_quiz_attempts,
                 total_pass_rate,

@@ -4,11 +4,11 @@ from typing import AsyncGenerator, Union
 
 import asqlite as sql
 
-QuizSettings = tuple[int, int, int, int, int, Union[int, None], int]
-QuizQuestion = tuple[int, str, str, str, Union[str, None], int, int, int]
-QuizChoice = tuple[int, int, str, bool]
-UserStats = tuple[bool, int, str]
-QuizAggregateStats = tuple[int, float, int, float, int, int, int]
+DBQuizSettings = tuple[int, int, int, int, int, Union[int, None], int]
+DBQuizQuestion = tuple[int, str, str, str, Union[str, None], int, int, int]
+DBQuizChoice = tuple[int, int, str, bool]
+DBUserStats = tuple[bool, int, str]
+DBQuizAggregateStats = tuple[int, float, int, float, int, int, int]
 
 _connection = None
 
@@ -92,7 +92,7 @@ async def create_tables_if_not_exist() -> None:
                 min_correct INTEGER NOT NULL,
                 required_role INTEGER NOT NULL,
                 passing_role INTEGER NOT NULL,
-                passing_role_two INTEGER NOT NULL,
+                passing_role_two INTEGER,
                 non_passing_role INTEGER NOT NULL,
                 FOREIGN KEY (quiz_type) REFERENCES quiz_types(id)
             );
@@ -126,7 +126,7 @@ async def create_tables_if_not_exist() -> None:
 
 async def check_if_manager_exists(user_id: int) -> bool:
     """Query database to check if `user_id` is present in the `managers` table.
-    
+
     Returns `bool` whether or not the `user_id` was found.
     """
     async with get_db_context() as cursor:
@@ -157,7 +157,7 @@ async def add_new_manager(manager_id: int, caller_id: int) -> None:
 
 async def remove_current_manager(manager_id: int) -> bool:
     """Delete an existing manager from the `managers` table using their Discord ID.
-    
+
     Returns `bool` if the deletion was successful or not.
     """
     async with get_db_context() as cursor:
@@ -236,7 +236,7 @@ async def select_quiz_slug_to_quiz_id(slug: str) -> int:
 
 async def add_quiz_type(slug: str) -> int:
     """Insert a new quiz type to the `quiz_types` table using a `type` string.
-    
+
     Returns `id` associated with newly inserted slug.
     """
     async with get_db_context() as cursor:
@@ -255,7 +255,7 @@ async def add_quiz_type(slug: str) -> int:
 
 async def remove_quiz_type(slug: str) -> bool:
     """Delete an existing quiz type from the `quiz_types` table using a `slug` string.
-    
+
     Returns `bool` whether the deletion was successful or not.
     """
     async with get_db_context() as cursor:
@@ -272,7 +272,7 @@ async def remove_quiz_type(slug: str) -> bool:
         return len(result) >= 1
 
 
-async def select_quiz_settings(slug: str) -> QuizSettings:
+async def select_quiz_settings(slug: str) -> DBQuizSettings:
     """Query database select the quiz settings of a specific quiz."""
     async with get_db_context() as cursor:
         await cursor.execute(
@@ -319,7 +319,7 @@ async def add_quiz_settings(
 
 async def remove_quiz_settings(quiz_id: int) -> bool:
     """Delete a quiz's settings for a quiz that is being removed.
-    
+
     Returns `bool` whether the deletion was successful or not.
     """
     async with get_db_context() as cursor:
@@ -370,8 +370,8 @@ async def add_quiz_question(
     quiz_id: int,
     created_by: int,
 ) -> int:
-    """Insert a new quiz question. 
-    
+    """Insert a new quiz question.
+
     Retruns the `id` of the new question.
     """
     async with get_db_context() as cursor:
@@ -411,7 +411,7 @@ async def add_quiz_question_choice(
 
 async def remove_quiz_question(question_id: int) -> bool:
     """Delete a quiz's settings.
-    
+
     Returns `bool` whether the deletion was successful or not.
     """
     async with get_db_context() as cursor:
@@ -430,7 +430,7 @@ async def remove_quiz_question(question_id: int) -> bool:
 
 async def remove_quiz_question_choice(question_id: int) -> bool:
     """Delete all quiz choices associated with a question `id`
-    
+
     Returns `bool` whether the deletion was successful or not.
     """
     async with get_db_context() as cursor:
@@ -447,7 +447,7 @@ async def remove_quiz_question_choice(question_id: int) -> bool:
         return len(result) >= 1
 
 
-async def list_quiz_questions(quiz_id: int) -> list[QuizQuestion]:
+async def list_quiz_questions(quiz_id: int) -> list[DBQuizQuestion]:
     """Select all quiz questions for a specific `quiz_id`."""
     async with get_db_context() as cursor:
         await cursor.execute(
@@ -463,7 +463,7 @@ async def list_quiz_questions(quiz_id: int) -> list[QuizQuestion]:
         return result
 
 
-async def list_quiz_question_choices(question_id: int) -> list[QuizChoice]:
+async def list_quiz_question_choices(question_id: int) -> list[DBQuizChoice]:
     """Select all quiz question choices for a specific `question_id`."""
     async with get_db_context() as cursor:
         await cursor.execute(
@@ -521,9 +521,9 @@ async def insert_question_stat(
         )
 
 
-async def select_quiz_stats_for_user(discord_id: int) -> list[UserStats]:
+async def select_quiz_stats_for_user(discord_id: int) -> list[DBUserStats]:
     """Select stats for quizzes that a user passed/failed.
-    
+
     Returns `bool` passed, `int` timestamp, and quiz slug.
     """
     async with get_db_context() as cursor:
@@ -553,7 +553,7 @@ async def select_quiz_stats_for_user(discord_id: int) -> list[UserStats]:
 
 async def select_quiz_stats_aggregate(
     quiz_id: int,
-) -> list[QuizAggregateStats]:
+) -> DBQuizAggregateStats:
     """Select BOTH global aggregate stats of ALL quizzes AND aggregate stats of a specific quiz."""
     async with get_db_context() as cursor:
         await cursor.execute(

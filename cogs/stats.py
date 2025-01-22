@@ -8,6 +8,7 @@ from discord.ext import commands
 import cogs.util.database_interactions as db_interactions
 from cogs.enum.embed_type import EmbedType
 from cogs.util.ctx_interaction_check import is_manager_or_owner
+from cogs.util.database_interactions import DBQuizAggregateStats, DBUserStats
 from cogs.util.macro import send_embed
 
 
@@ -32,7 +33,9 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
-            user_stats = await db_interactions.select_quiz_stats_for_user(user.id)
+            user_stats: list[DBUserStats] = (
+                await db_interactions.select_quiz_stats_for_user(user.id)
+            )
 
             message: str = ""
             for stat in user_stats:
@@ -68,8 +71,10 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
                     message=f"Quiz type `{quiz}` does not exist.",
                 )
 
-            quiz_id = await db_interactions.select_quiz_slug_to_quiz_id(quiz)
-            agg_stats = await db_interactions.select_quiz_stats_aggregate(quiz_id)
+            quiz_id: int = await db_interactions.select_quiz_slug_to_quiz_id(quiz)
+            agg_stats: DBQuizAggregateStats = (
+                await db_interactions.select_quiz_stats_aggregate(quiz_id)
+            )
             (
                 total_quiz_attempts,
                 total_pass_rate,

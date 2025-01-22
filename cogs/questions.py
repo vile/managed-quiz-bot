@@ -25,9 +25,7 @@ class PreparedAnswersTransformer(app_commands.Transformer):
         self.target_numbers = ["1", "2", "3", "4", "5"]
         super().__init__()
 
-    async def transform(
-        self, interaction: discord.Interaction, argument: str
-    ) -> PreparedAnswers:
+    async def transform(self, _: discord.Interaction, argument: str) -> PreparedAnswers:
         return [num in "".join(sorted(argument)) for num in self.target_numbers]
 
 

@@ -10,6 +10,8 @@ from discord.ext import commands
 
 import cogs.util.database_interactions as db_interactions
 from cogs.enum.embed_type import EmbedType
+from cogs.util.database_interactions import (DBQuizChoice, DBQuizQuestion,
+                                             DBQuizSettings)
 from cogs.util.macro import send_embed
 
 
@@ -57,7 +59,6 @@ class QuizView(discord.ui.View):
         self.add_item(QuizSubmitButton())
 
     async def on_timeout(self) -> None:
-        # TODO: handle quiz timeout
         await self.disable_children()
 
     async def disable_children(self) -> None:
@@ -148,16 +149,10 @@ class QuizSubmitButton(discord.ui.Button):
 
         correct: bool = all(answers_checked)
 
-        if correct:
-            await db_interactions.insert_question_stat(
-                self.view.user.id, self.view.question_id, True
-            )
-            return True
-        else:
-            await db_interactions.insert_question_stat(
-                self.view.user.id, self.view.question_id, False
-            )
-            return False
+        await db_interactions.insert_question_stat(
+            self.view.user.id, self.view.question_id, correct
+        )
+        return correct
 
 
 class QuizCommandsCog(commands.GroupCog, name="quiz"):
@@ -183,7 +178,9 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 )
 
             # ensure that the quiz the user is starting has the required role
-            quiz_settings = await db_interactions.select_quiz_settings(quiz)
+            quiz_settings: DBQuizSettings = await db_interactions.select_quiz_settings(
+                quiz
+            )
             (
                 quiz_id,
                 quiz_length,
@@ -222,7 +219,9 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             await interaction.user.send(f"Preparing your `{quiz}` quiz now!")
 
             # get set of questions (questions are randomized during view creation)
-            question_bank = await db_interactions.list_quiz_questions(quiz_id)
+            question_bank: list[DBQuizQuestion] = (
+                await db_interactions.list_quiz_questions(quiz_id)
+            )
             parsed_questions: list[QuizQuestion] = []
             for question in question_bank:
                 (
@@ -234,10 +233,12 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     *_,
                 ) = question
 
-                choice_bank = await db_interactions.list_quiz_question_choices(idx)
+                choice_bank: list[DBQuizChoice] = (
+                    await db_interactions.list_quiz_question_choices(idx)
+                )
                 parsed_choices: list[QuestionChoice] = []
                 for choice in choice_bank:
-                    _, _, choice_text, is_correct = choice
+                    *_, choice_text, is_correct = choice
                     parsed_choices.append(QuestionChoice(choice_text, bool(is_correct)))
 
                 parsed_questions.append(
@@ -301,7 +302,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 if question.image:
                     embed.set_image(url=question.image)
 
-                view = QuizView(
+                view: QuizView = QuizView(
                     question.idx,
                     question.choices,
                     question.correct_answer_text,
@@ -353,6 +354,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 discord.Object(id=quiz_required_role),
                 reason=f"User has attempted {quiz} quiz",
             )
+
             await interaction.user.send(content="Quiz complete!", embed=embed)
             self.active_quiz_users.remove(interaction.user.id)
         except discord.Forbidden:

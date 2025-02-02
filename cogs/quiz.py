@@ -189,7 +189,7 @@ class EthWalletInputModal(discord.ui.Modal):
     )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        self.parent_view.eth_wallet_address = self.eth_wallet_address
+        self.parent_view.eth_wallet_address = self.eth_wallet_address.value
 
         await interaction.response.send_message(
             f"Thank you for your wallet address, {interaction.user.mention}!"

@@ -322,7 +322,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             )
 
             wallet_modal: EthWalletInputView = EthWalletInputView()
-            await interaction.user.send(view=wallet_modal)
+            wallet_modal.response = await interaction.user.send(view=wallet_modal)
             await wallet_modal.wait()
 
             # dm user the quiz view

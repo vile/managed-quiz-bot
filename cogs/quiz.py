@@ -166,21 +166,23 @@ class EthWalletInputView(discord.ui.View):
     async def enter_wallet(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        await interaction.response.send_modal(EthWalletInputModal())
+        await interaction.response.send_modal(EthWalletInputModal(self))
 
 
 class EthWalletInputModal(discord.ui.Modal):
-    def __init__(self) -> None:
+    def __init__(self, parent_view: EthWalletInputView) -> None:
         super().__init__(title="Wallet Input", timeout=VIEW_TIMEOUT)
-        self.eth_wallet_address = discord.ui.TextInput(
-            label="ETH Address",
-            placeholder="0x0000000000000000000000000000000000000000",
-            min_length=42,
-            max_length=42,
-        )
+        self.parent_view = parent_view
+
+    eth_wallet_address = discord.ui.TextInput(
+        label="ETH Address",
+        placeholder="0x0000000000000000000000000000000000000000",
+        min_length=42,
+        max_length=42,
+    )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        self.view.eth_wallet_address = self.eth_wallet_address
+        self.parent_view.eth_wallet_address = self.eth_wallet_address
 
         await interaction.response.send_message(
             f"Thank you for your wallet address, {interaction.user.mention}!"

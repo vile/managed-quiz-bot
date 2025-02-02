@@ -40,8 +40,8 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
             message: str = ""
             if len(user_stats) > 0:
                 for stat in user_stats:
-                    quiz_passed, quiz_timestamp, quiz_slug = stat
-                    message += f"{user.mention} {'did' if quiz_passed else 'did not'} pass `{quiz_slug}` quiz at <t:{quiz_timestamp}:f>\n"
+                    quiz_passed, quiz_timestamp, quiz_eth_wallet, quiz_slug = stat
+                    message += f"{user.mention} {'did' if quiz_passed else 'did not'} pass `{quiz_slug}` quiz at <t:{quiz_timestamp}:f>\n- `{quiz_eth_wallet}`\n"
             else:
                 message = "This user has not taken any quizzes yet."
 
@@ -52,7 +52,7 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
             )
         except Exception as error:
             self.logger.error(
-                "Some other exception happened when trying to add a new manager."
+                "Some other exception happened when trying to get stats for a user."
             )
             self.logger.error(error)
             await send_embed(

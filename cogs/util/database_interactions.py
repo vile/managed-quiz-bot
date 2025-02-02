@@ -7,7 +7,7 @@ import asqlite as sql
 DBQuizSettings = tuple[int, int, int, int, int, Union[int, None], int]
 DBQuizQuestion = tuple[int, str, str, str, Union[str, None], int, int, int]
 DBQuizChoice = tuple[int, int, str, bool]
-DBUserStats = tuple[bool, int, str]
+DBUserStats = tuple[bool, int, str, str]
 DBQuizAggregateStats = tuple[int, float, int, float, int, int, int]
 
 _connection = None

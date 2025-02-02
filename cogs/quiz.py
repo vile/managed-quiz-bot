@@ -195,7 +195,7 @@ class EthWalletInputModal(discord.ui.Modal):
             f"Thank you for your wallet address, {interaction.user.mention}!"
         )
 
-        self.parent_view.disable_children()
+        await self.parent_view.disable_children()
         self.parent_view.stop()
 
 

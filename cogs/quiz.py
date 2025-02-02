@@ -2,7 +2,7 @@ import logging
 import os
 from dataclasses import dataclass
 from random import sample
-from typing import Union
+from typing import Final, Union
 
 import discord
 from discord import app_commands
@@ -13,6 +13,8 @@ from cogs.enum.embed_type import EmbedType
 from cogs.util.database_interactions import (DBQuizChoice, DBQuizQuestion,
                                              DBQuizSettings)
 from cogs.util.macro import send_embed
+
+VIEW_TIMEOUT: Final[float] = 600.0  # 10 minutes
 
 
 @dataclass
@@ -40,7 +42,7 @@ class QuizView(discord.ui.View):
         incorrect_answer_text: str,
         user: discord.User,
     ) -> None:
-        super().__init__(timeout=600.0)  # 10 minutes
+        super().__init__(timeout=VIEW_TIMEOUT)
         self.question_id = question_id
         self.correct_answer_text = correct_answer_text
         self.incorrect_answer_text = incorrect_answer_text
@@ -105,7 +107,7 @@ class QuizSubmitButton(discord.ui.Button):
 
         if len(self.view.user_answers) == 0:
             followup_message: discord.WebhookMessage = await interaction.followup.send(
-                "you must select at least one answer."
+                "You must select at least one answer."
             )
             await followup_message.delete(delay=10.0)
             return
@@ -155,6 +157,36 @@ class QuizSubmitButton(discord.ui.Button):
         return correct
 
 
+class EthWalletInputView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.eth_wallet_address = None
+
+    @discord.ui.button(label="Enter Wallet", style=discord.ButtonStyle.primary)
+    async def enter_wallet(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await interaction.response.send_modal(EthWalletInputModal())
+
+
+class EthWalletInputModal(discord.ui.Modal):
+    def __init__(self) -> None:
+        super().__init__(title="Wallet Input", timeout=VIEW_TIMEOUT)
+        self.eth_wallet_address = discord.ui.TextInput(
+            label="ETH Address",
+            placeholder="0x0000000000000000000000000000000000000000",
+            min_length=42,
+            max_length=42,
+        )
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        self.view.eth_wallet_address = self.eth_wallet_address
+
+        await interaction.response.send_message(
+            f"Thank you for your wallet address, {interaction.user.mention}!"
+        )
+
+
 class QuizCommandsCog(commands.GroupCog, name="quiz"):
     def __init__(self, client: commands.Bot) -> None:
         self.client = client
@@ -189,6 +221,8 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 quiz_passing_role,
                 quiz_passing_role_two,
                 quiz_non_passing_role,
+                quiz_passed_text,
+                quiz_not_passed_text,
             ) = quiz_settings
 
             required_role: discord.Role = discord.utils.get(
@@ -275,6 +309,10 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                 message=f"Check your DMs to start your quiz! [Jump to DMs](https://discord.com/channels/@me/{interaction.user.dm_channel.id}).",
             )
 
+            wallet_modal: EthWalletInputView = EthWalletInputView()
+            await interaction.user.send(view=wallet_modal)
+            await wallet_modal.wait()
+
             # dm user the quiz view
             total_correct_questions: int = 0
             for idx, question in enumerate(
@@ -318,7 +356,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             if total_correct_questions >= quiz_min_correct:
                 embed: discord.Embed = discord.Embed(
                     title="You passed!",
-                    description=f"Quiz score: {total_correct_questions} out of {len(parsed_questions)}\nMinimum score: {quiz_min_correct / quiz_length:.0%} ({quiz_min_correct} correct answers)",
+                    description=f"Quiz score: {total_correct_questions} out of {len(parsed_questions)}\nMinimum score: {quiz_min_correct / quiz_length:.0%} ({quiz_min_correct} correct answers){f'\n**{quiz_passed_text}**' if quiz_passed_text is not None else ''}",
                     color=discord.Colour.green(),
                 )
 
@@ -333,12 +371,15 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     reason=f"User passed {quiz} quiz",
                 )
                 await db_interactions.insert_quiz_stat(
-                    interaction.user.id, quiz_id, True
+                    interaction.user.id,
+                    quiz_id,
+                    True,
+                    wallet_modal.eth_wallet_address,
                 )
             else:
                 embed: discord.Embed = discord.Embed(
                     title="You're almost there!",
-                    description=f"Quiz score: {total_correct_questions} out of {len(parsed_questions)}\nMinimum score: {quiz_min_correct / quiz_length:.0%} ({quiz_min_correct} correct answers)",
+                    description=f"Quiz score: {total_correct_questions} out of {len(parsed_questions)}\nMinimum score: {quiz_min_correct / quiz_length:.0%} ({quiz_min_correct} correct answers){f'\n**{quiz_not_passed_text}**' if quiz_not_passed_text is not None else ''}",
                     color=discord.Colour.yellow(),
                 )
 
@@ -347,7 +388,10 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     reason=f"User did not pass {quiz} quiz",
                 )
                 await db_interactions.insert_quiz_stat(
-                    interaction.user.id, quiz_id, False
+                    interaction.user.id,
+                    quiz_id,
+                    False,
+                    wallet_modal.eth_wallet_address,
                 )
 
             await interaction.user.remove_roles(

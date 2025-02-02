@@ -174,6 +174,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         passing_role: discord.Role,
         passing_role_two: Optional[discord.Role],
         non_passing_role: discord.Role,
+        quiz_passed_text: Optional[str],
+        quiz_not_passed_text: Optional[str],
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
@@ -200,6 +202,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 passing_role.id,
                 passing_role_two.id if passing_role_two is not None else None,
                 non_passing_role.id,
+                quiz_passed_text,
+                quiz_not_passed_text,
             )
 
             await send_embed(
@@ -324,12 +328,14 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 quiz_passing_role,
                 quiz_passing_role_two,
                 quiz_non_passing_role,
+                quiz_passed_text,
+                quiz_not_passed_text,
             ) = quiz_settings
 
             await send_embed(
                 interaction,
                 title="Quiz Settings",
-                message=f"[{quiz_id}] `{quiz_type}`\n- **Quiz Length:** {quiz_length}\n- **Required Correct Questions:** {quiz_min_correct}\n- **Passing Grade:** {quiz_min_correct / quiz_length:.0%}\n- **Required Role:** <@&{quiz_required_role}>\n- **Passing Role 1:** <@&{quiz_passing_role}>\n- **Passing Role 2:** {f'<@&{quiz_passing_role_two}>' if quiz_passing_role_two is not None else 'None'}\n- **Non-Passing Role:** <@&{quiz_non_passing_role}>",
+                message=f"[{quiz_id}] `{quiz_type}`\n- **Quiz Length:** {quiz_length}\n- **Required Correct Questions:** {quiz_min_correct}\n- **Passing Grade:** {quiz_min_correct / quiz_length:.0%}\n- **Required Role:** <@&{quiz_required_role}>\n- **Passing Role 1:** <@&{quiz_passing_role}>\n- **Passing Role 2:** {f'<@&{quiz_passing_role_two}>' if quiz_passing_role_two is not None else 'None'}\n- **Non-Passing Role:** <@&{quiz_non_passing_role}>\n- **Quiz Passed Text:** {quiz_passed_text}\n- **Quiz Not Passed Text:** {quiz_not_passed_text}",
             )
         except Exception as error:
             self.logger.error(

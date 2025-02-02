@@ -94,6 +94,8 @@ async def create_tables_if_not_exist() -> None:
                 passing_role INTEGER NOT NULL,
                 passing_role_two INTEGER,
                 non_passing_role INTEGER NOT NULL,
+                quiz_passed_text TEXT,
+                quiz_not_passed_text TEXT,
                 FOREIGN KEY (quiz_type) REFERENCES quiz_types(id)
             );
             """
@@ -106,7 +108,8 @@ async def create_tables_if_not_exist() -> None:
                 discord_id INTEGER NOT NULL,
                 quiz_type INTEGER NOT NULL,
                 passed BOOLEAN NOT NULL,
-                timestamp INTEGER NOT NULL DEFAULT (unixepoch('now'))
+                timestamp INTEGER NOT NULL DEFAULT (unixepoch('now')),
+                eth_wallet_address TEXT NOT NULL
             );
             """
         )
@@ -297,13 +300,15 @@ async def add_quiz_settings(
     passing_role: int,
     passing_role_two: int,
     non_passing_role: int,
+    quiz_passed_text: Union[str, None],
+    quiz_not_passed_text: Union[str, None],
 ) -> None:
     """Insert quiz settings for a new quiz type."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            INSERT INTO quiz_settings (quiz_type, length, min_correct, required_role, passing_role, passing_role_two, non_passing_role)
-            VALUES (?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO quiz_settings (quiz_type, length, min_correct, required_role, passing_role, passing_role_two, non_passing_role, quiz_passed_text, quiz_not_passed_text)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 quiz_id,
@@ -313,6 +318,8 @@ async def add_quiz_settings(
                 passing_role,
                 passing_role_two,
                 non_passing_role,
+                quiz_passed_text,
+                quiz_not_passed_text,
             ),
         )
 
@@ -495,15 +502,17 @@ async def check_quiz_question_exists(question_id: int) -> bool:
         return result[0] >= 1
 
 
-async def insert_quiz_stat(discord_id: int, quiz_type: int, passed: bool) -> None:
+async def insert_quiz_stat(
+    discord_id: int, quiz_type: int, passed: bool, eth_wallet_address: str
+) -> None:
     """Insert a new quiz stat."""
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            INSERT INTO quiz_stats (discord_id, quiz_type, passed)
-            VALUES (?, ?, ?);
+            INSERT INTO quiz_stats (discord_id, quiz_type, passed, eth_wallet_address)
+            VALUES (?, ?, ?, ?);
             """,
-            (discord_id, quiz_type, passed),
+            (discord_id, quiz_type, passed, eth_wallet_address),
         )
 
 
@@ -524,7 +533,7 @@ async def insert_question_stat(
 async def select_quiz_stats_for_user(discord_id: int) -> list[DBUserStats]:
     """Select stats for quizzes that a user passed/failed.
 
-    Returns `bool` passed, `int` timestamp, and quiz slug.
+    Returns `bool` passed, `int` timestamp, `str` eth wallet address, and quiz slug.
     """
     async with get_db_context() as cursor:
         await cursor.execute(
@@ -532,6 +541,7 @@ async def select_quiz_stats_for_user(discord_id: int) -> list[DBUserStats]:
             SELECT
                 qs.passed,
                 qs.timestamp,
+                qs.eth_wallet_address,
                 qt.slug
             FROM
                 quiz_stats AS qs

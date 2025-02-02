@@ -188,6 +188,8 @@ class EthWalletInputModal(discord.ui.Modal):
             f"Thank you for your wallet address, {interaction.user.mention}!"
         )
 
+        self.parent_view.stop()
+
 
 class QuizCommandsCog(commands.GroupCog, name="quiz"):
     def __init__(self, client: commands.Bot) -> None:

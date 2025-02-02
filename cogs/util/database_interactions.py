@@ -280,7 +280,7 @@ async def select_quiz_settings(slug: str) -> DBQuizSettings:
     async with get_db_context() as cursor:
         await cursor.execute(
             """
-            SELECT qt.id, qs.length, qs.min_correct, qs.required_role, qs.passing_role, qs.passing_role_two, qs.non_passing_role
+            SELECT qt.id, qs.length, qs.min_correct, qs.required_role, qs.passing_role, qs.passing_role_two, qs.non_passing_role, qs.quiz_passed_text, qs.quiz_not_passed_text
             FROM quiz_settings AS qs
             LEFT JOIN quiz_types AS qt ON qs.quiz_type = qt.id
             WHERE qt.slug = ?;

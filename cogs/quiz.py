@@ -168,6 +168,13 @@ class EthWalletInputView(discord.ui.View):
     ):
         await interaction.response.send_modal(EthWalletInputModal(self))
 
+    async def disable_children(self) -> None:
+        for child in self.children:
+            child.disabled = True
+
+        if self.response:
+            await self.response.edit(view=self)
+
 
 class EthWalletInputModal(discord.ui.Modal):
     def __init__(self, parent_view: EthWalletInputView) -> None:
@@ -188,6 +195,7 @@ class EthWalletInputModal(discord.ui.Modal):
             f"Thank you for your wallet address, {interaction.user.mention}!"
         )
 
+        self.parent_view.disable_children()
         self.parent_view.stop()
 
 

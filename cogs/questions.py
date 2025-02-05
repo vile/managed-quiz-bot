@@ -254,7 +254,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     description_text += section_text
 
             else:
-                if len(description_text) >= 0:
+                if len(description_text) > 0:
                     embed: discord.Embed = discord.Embed(
                         color=discord.Colour.green(), description=description_text
                     )

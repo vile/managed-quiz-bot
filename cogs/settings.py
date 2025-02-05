@@ -149,7 +149,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
             else:
                 for manager in managers:
                     manager_id, discord_id, added_timestamp, added_by = manager
-                    embed_message += f"- [{manager_id}] <@{discord_id}>\n (added at <t:{added_timestamp}:f> by <@{added_by}>)"
+                    embed_message += f"- [{manager_id}] <@{discord_id}>\n (added at <t:{added_timestamp}:f> by <@{added_by}>)\n"
 
             await send_embed(interaction, message=embed_message)
         except Exception as error:

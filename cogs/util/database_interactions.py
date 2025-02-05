@@ -333,7 +333,7 @@ async def remove_quiz_settings(quiz_id: int) -> bool:
         await cursor.execute(
             """
             DELETE FROM quiz_settings
-            WHERE quiz_settings.id = ?
+            WHERE quiz_settings.quiz_id = ?
             RETURNING *;
             """,
             (quiz_id,),

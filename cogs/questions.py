@@ -13,12 +13,13 @@ from cogs.util.macro import send_embed
 
 MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 4_000
 QUESTIONS_PER_AGE: Final[int] = 5
+TEN_MINUTES: Final[float] = float(10 * 60)
 PreparedAnswers = list[bool]
 
 
 class PaginatorView(discord.ui.View):
     def __init__(self, embeds: list[discord.Embed]):
-        super().__init__()
+        super().__init__(timeout=TEN_MINUTES)
         self.embeds = embeds
         self.current_page = 0
 
@@ -126,8 +127,6 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     embed_type=EmbedType.ERROR,
                     message="Ensure that the correct answer(s) supplied are filled choices.",
                 )
-
-            self.logger.info(f"{question_text=}, {correct_answers=}, {answer_list=}")
 
             if not await db_interactions.check_if_quiz_type_exists(quiz_type):
                 self.logger.info("Supplied quiz type does not exist")
@@ -270,7 +269,6 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 section_text: str = (
                     f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None' if question_image is None else f'[image]({question_image})'}\n- Correct Answer Text: {correct_answer_text}\n- Incorrect Answer Text: {incorrect_answer_text}\n**Answer Choices:**\n{answer_text}\n"
                 )
-                self.logger.info(f"{section_text=}")
 
                 if (
                     len(description_text) + len(section_text)

@@ -298,9 +298,6 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
                     )
                 )
 
-                if len(parsed_questions) >= quiz_length:
-                    break
-
             if (final_quiz_length := len(parsed_questions)) < quiz_length:
                 self.active_quiz_users.remove(interaction.user.id)
                 self.logger.error(
@@ -328,7 +325,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             # dm user the quiz view
             total_correct_questions: int = 0
             for idx, question in enumerate(
-                sample(parsed_questions, len(parsed_questions))
+                sample(parsed_questions, quiz_length)
             ):
                 answer_text: str = ""
                 num_correct_answers: int = 0

@@ -231,7 +231,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         await interaction.response.defer(ephemeral=True)
         try:
             if await db_interactions.check_if_quiz_type_exists(quiz_type):
-                quiz_id: str = db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
+                quiz_id: str = await db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
 
                 quiz_questions: list[DBQuizQuestion] = (
                     await db_interactions.list_quiz_questions(quiz_id)

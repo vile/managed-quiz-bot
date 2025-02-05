@@ -263,10 +263,10 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message=f"Did not remove quiz type {quiz_type} as it was not an existing type.",
             )
         except Exception as error:
-            self.logger.exception(
+            self.logger.error(
                 "Some other exception happened when trying to remove a quiz type."
             )
-            self.logger.error(error)
+            self.logger.exception(error)
             await send_embed(
                 interaction,
                 embed_type=EmbedType.ERROR,

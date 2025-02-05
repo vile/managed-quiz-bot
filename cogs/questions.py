@@ -240,6 +240,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 section_text: str = (
                     f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None' if question_image is None else f'[image]({question_image})'}\n- Correct Answer Text: {correct_answer_text}\n- Incorrect Answer Text: {incorrect_answer_text}\n**Answer Choices:**\n{answer_text}\n"
                 )
+                self.logger.info(f"{section_text=}")
 
                 if (
                     len(description_text) + len(section_text)
@@ -249,11 +250,12 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                         color=discord.Colour.green(), description=description_text
                     )
                     embeds.append(embed)
-                    description_text = ""
+                    description_text = section_text
                 else:
                     description_text += section_text
 
             else:
+                self.logger.info(f"{description_text=}")
                 if len(description_text) > 0:
                     embed: discord.Embed = discord.Embed(
                         color=discord.Colour.green(), description=description_text

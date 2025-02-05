@@ -11,7 +11,7 @@ from cogs.enum.embed_type import EmbedType
 from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.macro import send_embed
 
-MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 6000
+MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 4096
 PreparedAnswers = list[bool]
 
 

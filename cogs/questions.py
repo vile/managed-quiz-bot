@@ -11,8 +11,37 @@ from cogs.enum.embed_type import EmbedType
 from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.macro import send_embed
 
-MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 4096
+MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 4_000
+QUESTIONS_PER_AGE: Final[int] = 5
 PreparedAnswers = list[bool]
+
+
+class PaginatorView(discord.ui.View):
+    def __init__(self, embeds: list[discord.Embed]):
+        super().__init__()
+        self.embeds = embeds
+        self.current_page = 0
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.grey, disabled=True)
+    async def previous_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.current_page -= 1
+        await self.update_buttons(interaction)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.grey)
+    async def next_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.current_page += 1
+        await self.update_buttons(interaction)
+
+    async def update_buttons(self, interaction: discord.Interaction):
+        self.previous_button.disabled = self.current_page == 0
+        self.next_button.disabled = self.current_page == len(self.embeds) - 1
+        await interaction.response.edit_message(
+            embed=self.embeds[self.current_page], view=self
+        )
 
 
 class PreparedAnswersTransformer(app_commands.Transformer):
@@ -217,8 +246,9 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
 
             embeds: list[discord.Embed] = []
             description_text: str = ""
+            page_count: int = 0
 
-            for question in questions:
+            for idx, question in enumerate(questions):
                 (
                     question_id,
                     question_text,
@@ -245,12 +275,16 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 if (
                     len(description_text) + len(section_text)
                     >= MAX_EMBED_DESCRIPTION_LENGTH
+                    or (idx + 1) % QUESTIONS_PER_AGE == 0
                 ):
                     embed: discord.Embed = discord.Embed(
-                        color=discord.Colour.green(), description=description_text
+                        color=discord.Colour.green(),
+                        description=description_text,
+                        title=f"Quiz Questions (Page {page_count + 1})",
                     )
                     embeds.append(embed)
                     description_text = section_text
+                    page_count += 1
                 else:
                     description_text += section_text
 
@@ -262,7 +296,7 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     )
                     embeds.append(embed)
 
-            await interaction.followup.send(embeds=embeds)
+            await interaction.followup.send(embed=embeds[0], view=PaginatorView(embeds))
         except Exception as error:
             self.logger.error(
                 "Some other exception happened when trying to list questions."

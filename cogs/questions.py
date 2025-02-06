@@ -300,14 +300,18 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None' if question_image is None else f'[image]({question_image})'}\n- Correct Answer Text: {correct_answer_text}\n- Incorrect Answer Text: {incorrect_answer_text}\n**Answer Choices:**\n{answer_text}\n"
                 )
 
-                if (
-                    len(description_text) + len(section_text)
-                    >= MAX_EMBED_DESCRIPTION_LENGTH
-                    or (page_limit := (idx + 1) % QUESTIONS_PER_PAGE == 0)
+                if len(description_text) + len(
+                    section_text
+                ) >= MAX_EMBED_DESCRIPTION_LENGTH or (
+                    page_limit := (idx + 1) % QUESTIONS_PER_PAGE == 0
                 ):
                     embed: discord.Embed = discord.Embed(
                         color=discord.Colour.green(),
-                        description=description_text if not page_limit else f"{description_text}{section_text}",
+                        description=(
+                            description_text
+                            if not page_limit
+                            else f"{description_text}{section_text}"
+                        ),
                         title=f"Quiz Questions (Page {page_count + 1})",
                     )
                     embeds.append(embed)

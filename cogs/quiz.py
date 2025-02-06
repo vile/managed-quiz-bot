@@ -266,7 +266,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             self.active_quiz_users.append(interaction.user.id)
 
             # send user a dm notification of the quiz starting
-            await interaction.user.send(f"Preparing your `{quiz}` quiz now!")
+            await interaction.user.send(f"Preparing your `{quiz}` quiz now!\n\n**Each question has a time limit of {VIEW_TIMEOUT / 60:.1f} minutes.**")
 
             # get set of questions (questions are randomized during view creation)
             question_bank: list[DBQuizQuestion] = (

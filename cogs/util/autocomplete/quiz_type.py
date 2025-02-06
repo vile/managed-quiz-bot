@@ -4,9 +4,7 @@ from discord import app_commands
 import cogs.util.database_interactions as db_interactions
 
 
-async def autocomplete(
-    *args, **kwargs
-) -> list[app_commands.Choice[str]]:
+async def autocomplete(*args, **kwargs) -> list[app_commands.Choice[str]]:
     quiz_types = await db_interactions.select_all_quiz_types()
 
     return [

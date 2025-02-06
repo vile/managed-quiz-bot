@@ -266,7 +266,9 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             self.active_quiz_users.append(interaction.user.id)
 
             # send user a dm notification of the quiz starting
-            await interaction.user.send(f"Preparing your `{quiz}` quiz now!\n\n**Each question has a time limit of {VIEW_TIMEOUT / 60:.1f} minutes.**")
+            await interaction.user.send(
+                f"Preparing your `{quiz}` quiz now!\n\n**Each question has a time limit of {VIEW_TIMEOUT / 60:.1f} minutes.**"
+            )
 
             # get set of questions (questions are randomized during view creation)
             question_bank: list[DBQuizQuestion] = (
@@ -331,7 +333,9 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             for idx, question in enumerate(sample(parsed_questions, quiz_length)):
                 answer_text: str = ""
                 num_correct_answers: int = 0
-                for idy, choice in enumerate(question.choices):
+                for idy, choice in enumerate(
+                    sample(question.choices, len(question.choices))
+                ):
                     if choice.is_correct:
                         num_correct_answers += 1
 

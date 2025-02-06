@@ -15,7 +15,7 @@ from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.macro import send_embed
 
 MAX_EMBED_DESCRIPTION_LENGTH: Final[int] = 4_000
-QUESTIONS_PER_AGE: Final[int] = 5
+QUESTIONS_PER_PAGE: Final[int] = 3
 TEN_MINUTES: Final[float] = float(10 * 60)
 PreparedAnswers = list[bool]
 
@@ -25,6 +25,9 @@ class PaginatorView(discord.ui.View):
         super().__init__(timeout=TEN_MINUTES)
         self.embeds = embeds
         self.current_page = 0
+        self.page_count = len(embeds)
+        self.dropdown = self.PageSelect(self)
+        self.add_item(self.dropdown)
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.grey, disabled=True)
     async def previous_button(
@@ -43,9 +46,29 @@ class PaginatorView(discord.ui.View):
     async def update_buttons(self, interaction: discord.Interaction):
         self.previous_button.disabled = self.current_page == 0
         self.next_button.disabled = self.current_page == len(self.embeds) - 1
+        self.dropdown.refresh_options()
         await interaction.response.edit_message(
             embed=self.embeds[self.current_page], view=self
         )
+
+    class PageSelect(discord.ui.Select):
+        def __init__(self, paginator: "PaginatorView"):
+            self.paginator = paginator
+            options = [
+                discord.SelectOption(label=f"Page {i+1}", value=str(i))
+                for i in range(len(paginator.embeds))
+            ]
+            super().__init__(placeholder="Jump to page...", options=options)
+
+        def refresh_options(self):
+            self.options = [
+                discord.SelectOption(label=f"Page {i+1}", value=str(i))
+                for i in range(len(self.paginator.embeds))
+            ]
+
+        async def callback(self, interaction: discord.Interaction):
+            self.paginator.current_page = int(self.values[0])
+            await self.paginator.update_buttons(interaction)
 
 
 class PreparedAnswersTransformer(app_commands.Transformer):
@@ -269,9 +292,9 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                     question_id
                 )
                 answer_text: str = ""
-                for idx, choice in enumerate(answer_choices):
+                for idy, choice in enumerate(answer_choices):
                     _, _, choice_text, is_correct = choice
-                    answer_text += f"- {'**' if is_correct else ''}{chr(ord('@') + (idx + 1))}: {choice_text}{'**' if is_correct else ''}\n"
+                    answer_text += f"- {'**' if is_correct else ''}{chr(ord('@') + (idy + 1))}: {choice_text}{'**' if is_correct else ''}\n"
 
                 section_text: str = (
                     f"`[{question_id}]` **{question_text}**\n- Created By: <@{created_by}>\n- Created At: <t:{created_at}:f>\n- Image Link: {'None' if question_image is None else f'[image]({question_image})'}\n- Correct Answer Text: {correct_answer_text}\n- Incorrect Answer Text: {incorrect_answer_text}\n**Answer Choices:**\n{answer_text}\n"
@@ -280,15 +303,15 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 if (
                     len(description_text) + len(section_text)
                     >= MAX_EMBED_DESCRIPTION_LENGTH
-                    or (idx + 1) % QUESTIONS_PER_AGE == 0
+                    or (page_limit := (idx + 1) % QUESTIONS_PER_PAGE == 0)
                 ):
                     embed: discord.Embed = discord.Embed(
                         color=discord.Colour.green(),
-                        description=description_text,
+                        description=description_text if not page_limit else f"{description_text}{section_text}",
                         title=f"Quiz Questions (Page {page_count + 1})",
                     )
                     embeds.append(embed)
-                    description_text = section_text
+                    description_text = section_text if not page_limit else ""
                     page_count += 1
                 else:
                     description_text += section_text

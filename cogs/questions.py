@@ -7,7 +7,10 @@ from discord import app_commands
 from discord.ext import commands
 
 import cogs.util.database_interactions as db_interactions
+from cogs.descriptions.questions import *
 from cogs.enum.embed_type import EmbedType
+from cogs.util.autocomplete.quiz_type import \
+    autocomplete as quiz_type_autocomplete
 from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.macro import send_embed
 
@@ -66,10 +69,18 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
         self.client = client
         self.logger = logging.getLogger(f"cogs.{self.__cog_name__}")
 
-    @app_commands.command(
-        name="add",
-        description="Add a new question to a quiz's question bank. At least two total and one correct choice is required.",
-    )
+    @app_commands.command(name="add", description=CMD_ADD_DESC)
+    @app_commands.describe(quiz_type=CMD_ADD_QUIZ_TYPE)
+    @app_commands.describe(image=CMD_ADD_IMAGE)
+    @app_commands.describe(question_text=CMD_ADD_QUESTION_TEXT)
+    @app_commands.describe(correct_answers=CMD_ADD_CORRECT_ANSWERS)
+    @app_commands.describe(correct_answer_text=CMD_ADD_CORRECT_ANSWER_TEXT)
+    @app_commands.describe(incorrect_answer_text=CMD_ADD_INCORRECT_ANSWER_TEXT)
+    @app_commands.describe(answer_one=CMD_ADD_ANSWER_ONE)
+    @app_commands.describe(answer_two=CMD_ADD_ANSWER_TWO)
+    @app_commands.describe(answer_three=CMD_ADD_ANSWER_THREE)
+    @app_commands.describe(answer_four=CMD_ADD_ANSWER_FOUR)
+    @app_commands.describe(answer_five=CMD_ADD_ANSWER_FIVE)
     async def add_question(
         self,
         interaction: discord.Interaction,
@@ -166,10 +177,8 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @app_commands.command(
-        name="remove",
-        description="Remove an existing question from the question bank. This will also remove associated anwers.",
-    )
+    @app_commands.command(name="remove", description=CMD_REMOVE_DESC)
+    @app_commands.describe(question_id=CMD_REMOVE_QUESTION_ID)
     async def remove_question(
         self, interaction: discord.Interaction, question_id: int
     ) -> None:
@@ -215,10 +224,8 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @app_commands.command(
-        name="list",
-        description="List all questions for a specific quiz type.",
-    )
+    @app_commands.command(name="list", description=CMD_LIST_DESC)
+    @app_commands.describe(quiz_type=CMD_LIST_QUIZ_TYPE)
     async def list_questions(
         self, interaction: discord.Interaction, quiz_type: str
     ) -> None:
@@ -304,6 +311,14 @@ class QuestionsCommandsCog(commands.GroupCog, name="questions"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
+
+    @add_question.autocomplete("quiz_type")
+    @list_questions.autocomplete("quiz_type")
+    async def wrapper(self, *args, **kwargs) -> list[app_commands.Choice[str]]:
+        result: list[app_commands.Choice[str]] = await quiz_type_autocomplete(
+            self, *args, **kwargs
+        )
+        return result
 
 
 async def setup(client: commands.Bot) -> None:

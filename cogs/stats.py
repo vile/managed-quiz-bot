@@ -6,7 +6,10 @@ from discord import app_commands
 from discord.ext import commands
 
 import cogs.util.database_interactions as db_interactions
+from cogs.descriptions.stats import *
 from cogs.enum.embed_type import EmbedType
+from cogs.util.autocomplete.quiz_type import \
+    autocomplete as quiz_type_autocomplete
 from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.database_interactions import DBQuizAggregateStats, DBUserStats
 from cogs.util.macro import send_embed
@@ -20,15 +23,12 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
         self.logger = logging.getLogger(f"cogs.{self.__cog_name__}")
 
     get_group: app_commands.Group = app_commands.Group(
-        name="get",
-        description="Get aggregate or individual stats about quizzes or questions.",
+        name="get", description=GROUP_GET_DESC
     )
 
-    @get_group.command(
-        name="user-quiz",
-        description="Get passing and timestamp data about a user's quiz.",
-    )
-    async def get_user_quiz(
+    @get_group.command(name="user-quiz", description=CMD_GET_USER_QUIZ_DESC)
+    @app_commands.describe(user=CMD_GET_USER_QUIZ_USER)
+    async def get_user_quiz_stats(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -61,10 +61,11 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @get_group.command(
-        name="aggregate-quiz", description="Get an aggregate data overview of a quiz."
-    )
-    async def _(self, interaction: discord.Interaction, quiz: str) -> None:
+    @get_group.command(name="aggregate-quiz", description=CMD_GET_AGG_QUIZ_DESC)
+    @app_commands.describe(quiz=CMD_GET_AGG_QUIZ_QUIZ)
+    async def get_agg_quiz_stats(
+        self, interaction: discord.Interaction, quiz: str
+    ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
             if not await db_interactions.check_if_quiz_type_exists(quiz):
@@ -111,6 +112,13 @@ class StatsCommandsCog(commands.GroupCog, name="stats"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
+
+    @get_agg_quiz_stats.autocomplete("quiz")
+    async def wrapper(self, *args, **kwargs) -> list[app_commands.Choice[str]]:
+        result: list[app_commands.Choice[str]] = await quiz_type_autocomplete(
+            self, *args, **kwargs
+        )
+        return result
 
 
 async def setup(client: commands.Bot) -> None:

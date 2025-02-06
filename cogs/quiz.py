@@ -9,7 +9,10 @@ from discord import app_commands
 from discord.ext import commands
 
 import cogs.util.database_interactions as db_interactions
+from cogs.descriptions.quiz import *
 from cogs.enum.embed_type import EmbedType
+from cogs.util.autocomplete.quiz_type import \
+    autocomplete as quiz_type_autocomplete
 from cogs.util.database_interactions import (DBQuizChoice, DBQuizQuestion,
                                              DBQuizSettings)
 from cogs.util.macro import send_embed
@@ -205,7 +208,8 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
         self.logger = logging.getLogger(f"cogs.{self.__cog_name__}")
         self.active_quiz_users: list[int] = []
 
-    @app_commands.command(name="start", description="Start a new quiz!")
+    @app_commands.command(name="start", description=CMD_QUIZ_START_DESC)
+    @app_commands.describe(quiz=CMD_QUIZ_START_QUIZ)
     async def start_quiz(
         self,
         interaction: discord.Interaction,
@@ -324,9 +328,7 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
 
             # dm user the quiz view
             total_correct_questions: int = 0
-            for idx, question in enumerate(
-                sample(parsed_questions, quiz_length)
-            ):
+            for idx, question in enumerate(sample(parsed_questions, quiz_length)):
                 answer_text: str = ""
                 num_correct_answers: int = 0
                 for idy, choice in enumerate(question.choices):
@@ -428,15 +430,11 @@ class QuizCommandsCog(commands.GroupCog, name="quiz"):
             )
 
     @start_quiz.autocomplete("quiz")
-    async def start_quiz_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[app_commands.Choice[str]]:
-        quiz_types = await db_interactions.select_all_quiz_types()
-
-        return [
-            app_commands.Choice(name=quiz_name, value=quiz_name)
-            for _, quiz_name in quiz_types
-        ]
+    async def wrapper(self, *args, **kwargs) -> list[app_commands.Choice[str]]:
+        result: list[app_commands.Choice[str]] = await quiz_type_autocomplete(
+            self, *args, **kwargs
+        )
+        return result
 
 
 async def setup(client: commands.Bot) -> None:

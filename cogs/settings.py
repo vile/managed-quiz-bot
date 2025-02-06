@@ -7,7 +7,10 @@ from discord import app_commands
 from discord.ext import commands
 
 import cogs.util.database_interactions as db_interactions
+from cogs.descriptions.settings import *
 from cogs.enum.embed_type import EmbedType
+from cogs.util.autocomplete.quiz_type import \
+    autocomplete as quiz_type_autocomplete
 from cogs.util.ctx_interaction_check import is_manager_or_owner
 from cogs.util.database_interactions import DBQuizQuestion, DBQuizSettings
 from cogs.util.macro import send_embed
@@ -20,23 +23,20 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
         self.client = client
         self.logger = logging.getLogger(f"cogs.{self.__cog_name__}")
 
-    # Command sub groups
     manager_group: app_commands.Group = app_commands.Group(
-        name="manager",
-        description="Edit settings related to quiz bot managers.",
+        name="manager", description=GROUP_MANAGER_DESC
     )
 
     quiz_group: app_commands.Group = app_commands.Group(
-        name="quiz",
-        description="Edit settings related to quiz, such as the number of required correct questions.",
+        name="quiz", description=GROUP_QUIZ_DESC
     )
 
     quiz_edit_group: app_commands.Group = app_commands.Group(
-        name="quiz-edit",
-        description="Edit settings for individual quizzes.",
+        name="quiz-edit", description=GROUP_EDIT_DESC
     )
 
-    @manager_group.command(name="add", description="Add a new bot manager.")
+    @manager_group.command(name="add", description=CMD_MANAGER_ADD_DESC)
+    @app_commands.describe(new_manager=CMD_MANAGER_ADD_MANAGER)
     async def add_bot_manager(
         self, interaction: discord.Interaction, new_manager: discord.Member
     ) -> None:
@@ -71,7 +71,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @manager_group.command(name="remove", description="Remove an existing bot manager.")
+    @manager_group.command(name="remove", description=CMD_MANAGER_REMOVE_DESC)
+    @app_commands.describe(current_manager=CMD_MANAGER_REMOVE_MANAGER)
     async def remove_bot_manager(
         self, interaction: discord.Interaction, current_manager: discord.Member
     ) -> None:
@@ -105,9 +106,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @manager_group.command(
-        name="check", description="Check if a user is an existing bot manager."
-    )
+    @manager_group.command(name="check", description=CMD_MANAGER_CHECK_DESC)
+    @app_commands.describe(user_to_check=CMD_MANAGER_CHECK_USER)
     async def check_bot_manager(
         self, interaction: discord.Interaction, user_to_check: discord.Member
     ) -> None:
@@ -134,7 +134,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @manager_group.command(name="list", description="List all current bot managers.")
+    @manager_group.command(name="list", description=CMD_MANAGER_LIST_DESC)
     async def list_bot_managers(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
@@ -163,7 +163,16 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @quiz_group.command(name="add", description="Add a new quiz type.")
+    @quiz_group.command(name="add", description=CMD_QUIZ_ADD_DESC)
+    @app_commands.describe(quiz_type=CMD_QUIZ_ADD_QUIZ_TYPE)
+    @app_commands.describe(quiz_length=CMD_QUIZ_ADD_QUIZ_LENGTH)
+    @app_commands.describe(quiz_min_correct=CMD_QUIZ_ADD_MIN_CORRECT)
+    @app_commands.describe(required_role=CMD_QUIZ_ADD_REQUIRED_ROLE)
+    @app_commands.describe(passing_role=CMD_QUIZ_ADD_PASSING_ROLE_ONE)
+    @app_commands.describe(passing_role_two=CMD_QUIZ_ADD_PASSING_ROLE_TWO)
+    @app_commands.describe(non_passing_role=CMD_QUIZ_ADD_NON_PASSING_ROLE)
+    @app_commands.describe(quiz_passed_text=CMD_QUIZ_ADD_PASSED_TEXT)
+    @app_commands.describe(quiz_not_passed_text=CMD_QUIZ_ADD_NOT_PASSED_TEXT)
     async def add_quiz_type(
         self,
         interaction: discord.Interaction,
@@ -221,17 +230,17 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @quiz_group.command(
-        name="remove",
-        description="Remove an existing quiz type. THIS WILL DELETE ALL SETTINGS AND QUESTIOSN ASSOCIATED WITH THIS QUIZ.",
-    )
+    @quiz_group.command(name="remove", description=CMD_QUIZ_REMOVE_DESC)
+    @app_commands.describe(quiz_type=CMD_QUIZ_REMOVE_QUIZ_TYPE)
     async def remove_quiz_type(
         self, interaction: discord.Interaction, quiz_type: str
     ) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
             if await db_interactions.check_if_quiz_type_exists(quiz_type):
-                quiz_id: str = await db_interactions.select_quiz_slug_to_quiz_id(quiz_type)
+                quiz_id: str = await db_interactions.select_quiz_slug_to_quiz_id(
+                    quiz_type
+                )
 
                 quiz_questions: list[DBQuizQuestion] = (
                     await db_interactions.list_quiz_questions(quiz_id)
@@ -273,7 +282,7 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @quiz_group.command(name="list", description="List all existing quiz types.")
+    @quiz_group.command(name="list", description=CMD_QUIZ_LIST_DESC)
     async def list_quiz_types(self, interaction: discord.Interaction) -> None:
         await interaction.response.defer(ephemeral=True)
         try:
@@ -302,9 +311,8 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 message="An error occured when trying to query the database. Try again.",
             )
 
-    @quiz_group.command(
-        name="get", description="Get the settings for an existing quiz type."
-    )
+    @quiz_group.command(name="get", description=CMD_QUIZ_GET_DESC)
+    @app_commands.describe(quiz_type=CMD_QUIZ_GET_QUIZ_TYPE)
     async def get_quiz_type(
         self, interaction: discord.Interaction, quiz_type: str
     ) -> None:
@@ -349,8 +357,10 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
             )
 
     @quiz_edit_group.command(
-        name="quiz-length", description="Edit how many questions appear on a quiz."
+        name="quiz-length", description=CMD_QUIZ_EDIT_QUIZ_LENGTH_DESC
     )
+    @app_commands.describe(quiz_type=CMD_QUIZ_EDIT_QUIZ_LENGTH_QUIZ_TYPE)
+    @app_commands.describe(quiz_length=CMD_QUIZ_EDIT_QUIZ_LENGTH_QUIZ_LENGTH)
     async def change_setting_quiz_length(
         self, interaction: discord.Interaction, quiz_type: str, quiz_length: int
     ) -> None:
@@ -386,9 +396,10 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
             )
 
     @quiz_edit_group.command(
-        name="minimum-score",
-        description="Edit what the minimum amount of correct questions is to pass.",
+        name="minimum-score", description=CMD_QUIZ_EDIT_MIN_SCORE_DESC
     )
+    @app_commands.describe(quiz_type=CMD_QUIZ_EDIT_MIN_SCORE_QUIZ_TYPE)
+    @app_commands.describe(quiz_min_correct=CMD_QUIZ_EDIT_MIN_SCORE_MIN_CORRECT)
     async def change_setting_quiz_min_correct(
         self, interaction: discord.Interaction, quiz_type: str, quiz_min_correct: int
     ) -> None:
@@ -426,6 +437,15 @@ class SettingsCommandsCog(commands.GroupCog, name="settings"):
                 embed_type=EmbedType.ERROR,
                 message="An error occured when trying to query the database. Try again.",
             )
+
+    @remove_quiz_type.autocomplete("quiz_type")
+    @change_setting_quiz_length.autocomplete("quiz_type")
+    @change_setting_quiz_min_correct.autocomplete("quiz_type")
+    async def wrapper(self, *args, **kwargs) -> list[app_commands.Choice[str]]:
+        result: list[app_commands.Choice[str]] = await quiz_type_autocomplete(
+            self, *args, **kwargs
+        )
+        return result
 
 
 async def setup(client: commands.Bot) -> None:
